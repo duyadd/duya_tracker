@@ -110,7 +110,18 @@ li.task {
 .tag.due.overdue { color: var(--danger); border-color: var(--danger); }
 .del-btn { background: transparent; color: var(--muted); font-size: 18px; padding: 4px 8px; }
 .del-btn:hover { color: var(--danger); }
+.edit-btn { background: transparent; color: var(--muted); font-size: 15px; padding: 4px 8px; }
+.edit-btn:hover { color: var(--accent); }
 .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 30px 0; }
+
+/* Inline edit form */
+.edit-form { width: 100%; }
+.edit-form input[type=text] { margin-bottom: 8px; }
+.edit-form .edit-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.edit-form input[type=date], .edit-form select { margin-bottom: 0; width: auto; padding: 8px 10px; }
+.edit-form .edit-actions { margin-left: auto; display: flex; gap: 6px; }
+.edit-form .btn-save { background: var(--done); color: #0a0a0a; font-weight: bold; padding: 8px 14px; font-size: 13px; }
+.edit-form .btn-cancel { background: var(--surface); color: var(--muted); padding: 8px 14px; font-size: 13px; border: 1px solid var(--border); }
 
 /* Summary cards (home) */
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 28px; }

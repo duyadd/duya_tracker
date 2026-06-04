@@ -53,46 +53,113 @@ function isOverdue(d, completed) {
 }
 
 // ===== Нэг даалгаврын <li> элемент үүсгэх =====
-// onChange — toggle/delete хийсний дараа жагсаалтыг дахин ачаалах callback
+// onChange — toggle/delete/edit хийсний дараа жагсаалтыг дахин ачаалах callback
 function buildTaskLi(task, onChange) {
   const li = document.createElement('li');
   li.className = 'task';
 
-  const check = document.createElement('div');
-  check.className = 'check' + (task.is_completed ? ' done' : '');
-  check.innerText = '✓';
-  check.onclick = async () => {
-    await db.from('todos').update({ is_completed: !task.is_completed }).eq('id', task.id);
-    onChange();
-  };
+  // ---- Энгийн (харах) горим ----
+  function renderView() {
+    li.innerHTML = '';
+    li.className = 'task';
 
-  const main = document.createElement('div');
-  main.className = 'task-main';
-  const title = document.createElement('div');
-  title.className = 'task-title' + (task.is_completed ? ' completed' : '');
-  title.innerText = task.title;
-  const meta = document.createElement('div');
-  meta.className = 'task-meta';
-  const catTag = document.createElement('span');
-  catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
-  catTag.innerText = task.category === 'work' ? 'Ажил' : 'Хувийн';
-  meta.appendChild(catTag);
-  if (task.due_date) {
-    const dueTag = document.createElement('span');
-    dueTag.className = 'tag due' + (isOverdue(task.due_date, task.is_completed) ? ' overdue' : '');
-    dueTag.innerText = '📅 ' + formatDate(task.due_date);
-    meta.appendChild(dueTag);
+    const check = document.createElement('div');
+    check.className = 'check' + (task.is_completed ? ' done' : '');
+    check.innerText = '✓';
+    check.onclick = async () => {
+      await db.from('todos').update({ is_completed: !task.is_completed }).eq('id', task.id);
+      onChange();
+    };
+
+    const main = document.createElement('div');
+    main.className = 'task-main';
+    const title = document.createElement('div');
+    title.className = 'task-title' + (task.is_completed ? ' completed' : '');
+    title.innerText = task.title;
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+    const catTag = document.createElement('span');
+    catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
+    catTag.innerText = task.category === 'work' ? 'Ажил' : 'Хувийн';
+    meta.appendChild(catTag);
+    if (task.due_date) {
+      const dueTag = document.createElement('span');
+      dueTag.className = 'tag due' + (isOverdue(task.due_date, task.is_completed) ? ' overdue' : '');
+      dueTag.innerText = '📅 ' + formatDate(task.due_date);
+      meta.appendChild(dueTag);
+    }
+    main.append(title, meta);
+
+    const edit = document.createElement('button');
+    edit.className = 'edit-btn';
+    edit.innerText = '✎';
+    edit.title = 'Засах';
+    edit.onclick = renderEdit;
+
+    const del = document.createElement('button');
+    del.className = 'del-btn';
+    del.innerText = '✕';
+    del.title = 'Устгах';
+    del.onclick = async () => {
+      await db.from('todos').delete().eq('id', task.id);
+      onChange();
+    };
+
+    li.append(check, main, edit, del);
   }
-  main.append(title, meta);
 
-  const del = document.createElement('button');
-  del.className = 'del-btn';
-  del.innerText = '✕';
-  del.onclick = async () => {
-    await db.from('todos').delete().eq('id', task.id);
-    onChange();
-  };
+  // ---- Засах горим ----
+  function renderEdit() {
+    li.innerHTML = '';
+    const form = document.createElement('div');
+    form.className = 'edit-form';
 
-  li.append(check, main, del);
+    const titleInput = document.createElement('input');
+    titleInput.type = 'text';
+    titleInput.value = task.title;
+
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+
+    const dueInput = document.createElement('input');
+    dueInput.type = 'date';
+    if (task.due_date) dueInput.value = task.due_date;
+
+    const catSelect = document.createElement('select');
+    catSelect.innerHTML = `
+      <option value="personal">Хувийн</option>
+      <option value="work">Ажил</option>`;
+    catSelect.value = task.category === 'work' ? 'work' : 'personal';
+
+    const actions = document.createElement('div');
+    actions.className = 'edit-actions';
+    const save = document.createElement('button');
+    save.className = 'btn-save';
+    save.innerText = 'Хадгалах';
+    save.onclick = async () => {
+      const newTitle = titleInput.value.trim();
+      if (!newTitle) { titleInput.focus(); return; }
+      await db.from('todos').update({
+        title: newTitle,
+        due_date: dueInput.value || null,
+        category: catSelect.value
+      }).eq('id', task.id);
+      onChange();
+    };
+    const cancel = document.createElement('button');
+    cancel.className = 'btn-cancel';
+    cancel.innerText = 'Болих';
+    cancel.onclick = renderView;
+    actions.append(save, cancel);
+
+    row.append(dueInput, catSelect, actions);
+    form.append(titleInput, row);
+    li.append(form);
+    titleInput.focus();
+
+    titleInput.addEventListener('keypress', e => { if (e.key === 'Enter') save.click(); });
+  }
+
+  renderView();
   return li;
 }
