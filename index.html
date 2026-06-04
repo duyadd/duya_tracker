@@ -15,15 +15,31 @@
   <h2>Тойм</h2>
   <p class="subtitle" id="greeting">Өнөөдрийн байдал</p>
   <div class="cards" id="cards"></div>
-  <div class="section-title">Удахгүй дуусах</div>
-  <ul id="upcoming"></ul>
-  <div class="empty hidden" id="empty-up">Ойрын хугацаатай даалгавар алга 🎉</div>
+
+  <div class="view-toggle">
+    <button id="btn-today" class="active">Өнөөдөр</button>
+    <button id="btn-week">Долоо хоног</button>
+  </div>
+
+  <!-- Өнөөдрийн agenda -->
+  <div id="today-view">
+    <ul id="agenda-list" style="list-style:none;"></ul>
+    <div class="empty hidden" id="empty-today">Өнөөдөр товлосон зүйл алга 🌤️</div>
+  </div>
+
+  <!-- Долоо хоногийн жижиг харагдац -->
+  <div id="week-view" class="hidden">
+    <div class="week-grid" id="week-grid"></div>
+  </div>
 </div>
+
 <script src="app.js"></script>
 <script>
 requireAuth('home', async (user) => {
   const { data: todos } = await db.from('todos').select('*');
   const list = todos || [];
+
+  // ----- Тоймын картууд -----
   const total = list.length;
   const done = list.filter(t => t.is_completed).length;
   const active = total - done;
@@ -40,16 +56,89 @@ requireAuth('home', async (user) => {
       <div class="num">${pct}%</div><div class="lbl">Гүйцэтгэл</div>
       <div class="progress"><span style="width:${pct}%"></span></div>
     </div>`;
-  const upcoming = list
-    .filter(t => t.due_date && !t.is_completed)
-    .sort((a, b) => a.due_date.localeCompare(b.due_date))
-    .slice(0, 6);
-  const ul = document.getElementById('upcoming');
-  if (upcoming.length === 0) {
-    document.getElementById('empty-up').classList.remove('hidden');
-  } else {
-    upcoming.forEach(t => ul.appendChild(buildTaskLi(t, () => location.reload())));
+
+  // ----- Огнооны туслах -----
+  function ymd(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
+  const todayStr = ymd(new Date());
+
+  // ----- Өнөөдрийн agenda -----
+  const agendaList = document.getElementById('agenda-list');
+  const todayItems = list
+    .filter(t => t.due_date === todayStr)
+    .sort((a,b) => (a.due_time||'99').localeCompare(b.due_time||'99'));
+
+  if (todayItems.length === 0) {
+    document.getElementById('empty-today').classList.remove('hidden');
+  } else {
+    todayItems.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'agenda-item';
+      const bar = document.createElement('div');
+      bar.className = 'agenda-bar ' + (t.category === 'work' ? 'work' : '') + (t.kind === 'meeting' ? ' meeting' : '');
+      const time = document.createElement('div');
+      time.className = 'agenda-time' + (t.due_time ? '' : ' allday');
+      time.innerText = t.due_time ? formatTime(t.due_time) : 'Өдөржин';
+      const body = document.createElement('div');
+      body.className = 'agenda-body';
+      const ttl = document.createElement('div');
+      ttl.className = 'agenda-title' + (t.is_completed ? ' completed' : '');
+      ttl.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
+      const meta = document.createElement('div');
+      meta.className = 'agenda-meta';
+      const bits = [t.category === 'work' ? 'Ажил' : 'Хувийн'];
+      if (t.assignee) bits.push('👤 ' + t.assignee);
+      meta.innerText = bits.join(' · ');
+      body.append(ttl, meta);
+      li.append(bar, time, body);
+      agendaList.appendChild(li);
+    });
+  }
+
+  // ----- Долоо хоногийн жижиг харагдац -----
+  const WEEKDAYS = ['Ня','Да','Мя','Лха','Пүр','Ба','Бя'];
+  function startOfWeek(d) {
+    const x = new Date(d); x.setHours(0,0,0,0);
+    const day = (x.getDay() + 6) % 7;
+    x.setDate(x.getDate() - day);
+    return x;
+  }
+  const start = startOfWeek(new Date());
+  const grid = document.getElementById('week-grid');
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const dStr = ymd(d);
+    const col = document.createElement('div');
+    col.className = 'day-col' + (dStr === todayStr ? ' today' : '');
+    col.innerHTML = `<div class="day-head">${WEEKDAYS[(i+1)%7]}<div class="dnum">${d.getDate()}</div></div>`;
+    const dayItems = list.filter(t => t.due_date === dStr)
+      .sort((a,b) => (a.due_time||'99').localeCompare(b.due_time||'99'));
+    dayItems.forEach(t => {
+      const item = document.createElement('div');
+      item.className = 'cal-item ' + (t.category === 'work' ? 'work' : 'personal')
+        + (t.kind === 'meeting' ? ' meeting' : '') + (t.is_completed ? ' completed' : '');
+      const div = document.createElement('div'); div.innerText = t.title;
+      const tStr = t.due_time ? formatTime(t.due_time) : '';
+      item.innerHTML = (tStr ? `<div class="t">${tStr}</div>` : '') + `<div class="ttl">${(t.kind==='meeting'?'👥 ':'')}${div.innerHTML}</div>`;
+      col.appendChild(item);
+    });
+    grid.appendChild(col);
+  }
+
+  // ----- Харагдац солих -----
+  const btnToday = document.getElementById('btn-today');
+  const btnWeek = document.getElementById('btn-week');
+  const todayView = document.getElementById('today-view');
+  const weekView = document.getElementById('week-view');
+  btnToday.onclick = () => {
+    btnToday.classList.add('active'); btnWeek.classList.remove('active');
+    todayView.classList.remove('hidden'); weekView.classList.add('hidden');
+  };
+  btnWeek.onclick = () => {
+    btnWeek.classList.add('active'); btnToday.classList.remove('active');
+    weekView.classList.remove('hidden'); todayView.classList.add('hidden');
+  };
 });
 </script>
 </body>

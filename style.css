@@ -177,3 +177,20 @@ li.task {
   .week-grid { grid-template-columns: 1fr; }
   .day-col { min-height: auto; }
 }
+
+/* Home view toggle */
+.view-toggle { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 4px; margin-bottom: 18px; }
+.view-toggle button { background: transparent; color: var(--muted); padding: 7px 16px; border-radius: 6px; font-size: 13px; }
+.view-toggle button.active { background: var(--accent); color: #1a1205; font-weight: bold; }
+
+/* Agenda (today) */
+.agenda-item { display: flex; gap: 14px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; background: var(--surface-2); align-items: flex-start; }
+.agenda-time { font-size: 13px; color: var(--accent); font-weight: bold; white-space: nowrap; min-width: 50px; padding-top: 2px; }
+.agenda-time.allday { color: var(--muted); font-weight: normal; }
+.agenda-body { flex: 1; min-width: 0; }
+.agenda-title { font-size: 15px; word-break: break-word; }
+.agenda-title.completed { text-decoration: line-through; color: var(--muted); }
+.agenda-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.agenda-bar { width: 3px; border-radius: 3px; align-self: stretch; background: var(--personal); }
+.agenda-bar.work { background: var(--work); }
+.agenda-bar.meeting { background: var(--done); }
