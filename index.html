@@ -4,136 +4,326 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-    <title>Миний Даалгаврын Жагсаалт</title>
+    <title>Миний Төлөвлөгөө</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
+        :root {
+            --bg: #0f1115;
+            --surface: #1a1d24;
+            --surface-2: #232730;
+            --border: #2e333d;
+            --text: #e8eaed;
+            --muted: #8b909a;
+            --accent: #f5a623;
+            --accent-dim: #c9871a;
+            --danger: #e25563;
+            --done: #4caf50;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: sans-serif;
-            background-color: #f3f4f6;
+            font-family: 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+            background: radial-gradient(circle at 20% 0%, #1b1f29 0%, var(--bg) 55%);
+            color: var(--text);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
-            padding: 40px 20px;
-            margin: 0;
+            align-items: flex-start;
+            padding: 32px 16px;
         }
         .container {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
+            overflow: hidden;
         }
-        h1 { text-align: center; margin-top: 0; color: #1f2937; }
-        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; }
-        button { background: #4f46e5; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 16px; }
-        ul { list-style: none; padding: 0; margin: 0; }
-        li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; }
-        .task-text { cursor: pointer; flex: 1; }
-        .completed { text-decoration: line-through; color: #9ca3af; }
-        .del-btn { background: #ef4444; padding: 6px 12px; font-size: 14px; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .header {
+            padding: 28px 28px 20px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(180deg, var(--surface-2), var(--surface));
+        }
+        .header h1 {
+            font-size: 24px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .header h1::before { content: "✦"; color: var(--accent); }
+        .header p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+        .body { padding: 24px 28px 28px; }
+
+        label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            color: var(--text);
+            font-size: 15px;
+            margin-bottom: 14px;
+            transition: border-color 0.15s;
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            border-radius: 9px;
+            font-size: 15px;
+            transition: transform 0.08s, background 0.15s;
+        }
+        button:active { transform: scale(0.97); }
+        .btn-primary {
+            width: 100%;
+            padding: 13px;
+            background: var(--accent);
+            color: #1a1205;
+            font-weight: bold;
+        }
+        .btn-primary:hover { background: var(--accent-dim); }
+        .btn-primary:disabled { opacity: 0.5; cursor: default; }
+
+        .switch-link {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            color: var(--muted);
+        }
+        .switch-link a { color: var(--accent); cursor: pointer; text-decoration: none; }
+        .switch-link a:hover { text-decoration: underline; }
+
+        .msg { font-size: 13px; padding: 10px 12px; border-radius: 8px; margin-bottom: 14px; display: none; }
+        .msg.error { background: rgba(226,85,99,0.12); color: var(--danger); display: block; }
+        .msg.info { background: rgba(245,166,35,0.12); color: var(--accent); display: block; }
+
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+        .topbar .email { font-size: 13px; color: var(--muted); }
+        .btn-logout { background: var(--surface-2); color: var(--muted); padding: 7px 12px; font-size: 13px; }
+        .btn-logout:hover { color: var(--text); }
+
+        .input-row { display: flex; gap: 8px; margin-bottom: 18px; }
+        .input-row input { margin-bottom: 0; }
+        .input-row button { padding: 0 18px; background: var(--accent); color: #1a1205; font-weight: bold; white-space: nowrap; }
+
+        ul { list-style: none; }
+        li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: var(--surface-2);
+        }
+        .check {
+            width: 22px; height: 22px;
+            border: 2px solid var(--muted);
+            border-radius: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; color: transparent;
+        }
+        .check.done { background: var(--accent); border-color: var(--accent); color: #1a1205; }
+        .task-text { flex: 1; font-size: 15px; word-break: break-word; }
+        .task-text.completed { text-decoration: line-through; color: var(--muted); }
+        .del-btn { background: transparent; color: var(--muted); font-size: 18px; padding: 4px 8px; }
+        .del-btn:hover { color: var(--danger); }
+        .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 24px 0; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
-
     <div class="container">
-        <h1>Миний Төлөвлөгөө</h1>
-        <div class="input-group">
-            <input type="text" id="task-input" placeholder="Юу хийх вэ?">
-            <button id="add-btn">Нэмэх</button>
+        <div class="header">
+            <h1>Миний Төлөвлөгөө</h1>
+            <p id="header-sub">Нэвтэрч орно уу</p>
         </div>
-        <ul id="task-list"></ul>
+        <div class="body">
+            <!-- НЭВТРЭХ / БҮРТГҮҮЛЭХ ДЭЛГЭЦ -->
+            <div id="auth-view">
+                <div id="auth-msg" class="msg"></div>
+                <label>Имэйл</label>
+                <input type="email" id="email" placeholder="name@example.com" autocomplete="username">
+                <label>Нууц үг</label>
+                <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+                <button class="btn-primary" id="auth-btn">Нэвтрэх</button>
+                <div class="switch-link">
+                    <span id="switch-text">Бүртгэлгүй юу?</span>
+                    <a id="switch-link">Бүртгүүлэх</a>
+                </div>
+            </div>
+
+            <!-- TODO ДЭЛГЭЦ -->
+            <div id="app-view" class="hidden">
+                <div class="topbar">
+                    <span class="email" id="user-email"></span>
+                    <button class="btn-logout" id="logout-btn">Гарах</button>
+                </div>
+                <div class="input-row">
+                    <input type="text" id="task-input" placeholder="Юу хийх вэ?">
+                    <button id="add-btn">Нэмэх</button>
+                </div>
+                <ul id="task-list"></ul>
+                <div class="empty hidden" id="empty-state">Одоогоор даалгавар алга 🌙</div>
+            </div>
+        </div>
     </div>
 
     <script>
-        // ⚠️ ӨӨРИЙН СУПАБЭЙС ХАЯГУУДАА ХАНШИЛТАН ДОТОР ЗӨВ ОРУУЛААРАЙ!
+        // ===== Supabase холболт =====
+        // anon/publishable key браузерт орохдоо аюулгүй (RLS-ээр хамгаалагдсан).
         const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK'; 
-        
-        // Алдаанаас сэргийлж хувьсагчийн нэрийг 'supabaseClient' болгож өөрчлөв
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // ===== Элементүүд =====
+        const authView = document.getElementById('auth-view');
+        const appView = document.getElementById('app-view');
+        const headerSub = document.getElementById('header-sub');
+        const authMsg = document.getElementById('auth-msg');
+        const emailEl = document.getElementById('email');
+        const passwordEl = document.getElementById('password');
+        const authBtn = document.getElementById('auth-btn');
+        const switchText = document.getElementById('switch-text');
+        const switchLink = document.getElementById('switch-link');
+        const userEmailEl = document.getElementById('user-email');
         const taskInput = document.getElementById('task-input');
         const addBtn = document.getElementById('add-btn');
         const taskList = document.getElementById('task-list');
+        const emptyState = document.getElementById('empty-state');
 
-        // Өгөгдлийн сангаас даалгавруудыг татаж унших функц
+        let mode = 'login'; // 'login' эсвэл 'signup'
+
+        // ===== Нэвтрэх / Бүртгүүлэх горим солих =====
+        switchLink.addEventListener('click', () => {
+            mode = mode === 'login' ? 'signup' : 'login';
+            if (mode === 'signup') {
+                authBtn.innerText = 'Бүртгүүлэх';
+                switchText.innerText = 'Бүртгэлтэй юу?';
+                switchLink.innerText = 'Нэвтрэх';
+                headerSub.innerText = 'Шинээр бүртгүүлнэ үү';
+            } else {
+                authBtn.innerText = 'Нэвтрэх';
+                switchText.innerText = 'Бүртгэлгүй юу?';
+                switchLink.innerText = 'Бүртгүүлэх';
+                headerSub.innerText = 'Нэвтэрч орно уу';
+            }
+            showMsg('', '');
+        });
+
+        function showMsg(text, type) {
+            authMsg.innerText = text;
+            authMsg.className = 'msg' + (type ? ' ' + type : '');
+        }
+
+        // ===== Нэвтрэх / Бүртгүүлэх товч =====
+        authBtn.addEventListener('click', async () => {
+            const email = emailEl.value.trim();
+            const password = passwordEl.value;
+            if (!email || !password) { showMsg('Имэйл болон нууц үгээ оруулна уу.', 'error'); return; }
+
+            authBtn.disabled = true;
+            if (mode === 'signup') {
+                const { error } = await db.auth.signUp({ email, password });
+                if (error) showMsg(error.message, 'error');
+                else showMsg('Бүртгэл амжилттай! Имэйлээ шалгаж баталгаажуулаад нэвтэрнэ үү.', 'info');
+            } else {
+                const { error } = await db.auth.signInWithPassword({ email, password });
+                if (error) showMsg(error.message, 'error');
+            }
+            authBtn.disabled = false;
+        });
+
+        passwordEl.addEventListener('keypress', (e) => { if (e.key === 'Enter') authBtn.click(); });
+
+        // ===== Гарах =====
+        document.getElementById('logout-btn').addEventListener('click', () => db.auth.signOut());
+
+        // ===== Нэвтрэлтийн төлөв өөрчлөгдөхөд дэлгэц солих =====
+        db.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+                authView.classList.add('hidden');
+                appView.classList.remove('hidden');
+                headerSub.innerText = 'Өнөөдөр юу хийх вэ?';
+                userEmailEl.innerText = session.user.email;
+                fetchTasks();
+            } else {
+                appView.classList.add('hidden');
+                authView.classList.remove('hidden');
+                headerSub.innerText = 'Нэвтэрч орно уу';
+                taskList.innerHTML = '';
+            }
+        });
+
+        // ===== Даалгавруудыг татах =====
         async function fetchTasks() {
-            const { data: todos, error } = await supabaseClient
+            const { data: todos, error } = await db
                 .from('todos')
                 .select('*')
                 .order('id', { ascending: true });
 
-            if (error) {
-                console.error('Алдаа гарлаа:', error);
-                return;
-            }
+            if (error) { console.error('Алдаа:', error); return; }
 
             taskList.innerHTML = '';
+            if (!todos || todos.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
             todos.forEach(task => {
                 const li = document.createElement('li');
-                
+
+                const check = document.createElement('div');
+                check.className = 'check' + (task.is_completed ? ' done' : '');
+                check.innerText = '✓';
+                check.onclick = () => toggleTask(task.id, task.is_completed);
+
                 const span = document.createElement('span');
-                span.className = 'task-text';
+                span.className = 'task-text' + (task.is_completed ? ' completed' : '');
                 span.innerText = task.title;
-                if (task.is_completed) span.classList.add('completed');
-                span.onclick = () => toggleTask(task.id, task.is_completed);
 
                 const delBtn = document.createElement('button');
                 delBtn.className = 'del-btn';
-                delBtn.innerText = 'Устгах';
+                delBtn.innerText = '✕';
                 delBtn.onclick = () => deleteTask(task.id);
 
-                li.appendChild(span);
-                li.appendChild(delBtn);
+                li.append(check, span, delBtn);
                 taskList.appendChild(li);
             });
         }
 
-        // Шинэ даалгавар өгөгдлийн санд нэмэх
+        // ===== Нэмэх =====
         async function addTask() {
             const text = taskInput.value.trim();
-            if (text === '') return;
-
-            const { error } = await supabaseClient
-                .from('todos')
-                .insert([{ title: text, is_completed: false }]);
-
-            if (error) {
-                console.error('Нэмэхэд алдаа гарлаа:', error);
-            } else {
-                taskInput.value = '';
-                fetchTasks();
-            }
+            if (!text) return;
+            // user_id-г датабэйс DEFAULT auth.uid()-ээр автоматаар бөглөнө
+            const { error } = await db.from('todos').insert([{ title: text, is_completed: false }]);
+            if (error) { console.error('Нэмэхэд алдаа:', error); return; }
+            taskInput.value = '';
+            fetchTasks();
         }
-
-        // Даалгаврыг хийж дууссан эсэхийг өөрчлөх
-        async function toggleTask(id, currentStatus) {
-            const { error } = await supabaseClient
-                .from('todos')
-                .update({ is_completed: !currentStatus })
-                .eq('id', id);
-
-            if (!error) fetchTasks();
-        }
-
-        // Даалгаврыг өгөгдлийн сангаас устгах
-        async function deleteTask(id) {
-            const { error } = await supabaseClient
-                .from('todos')
-                .delete()
-                .eq('id', id);
-
-            if (!error) fetchTasks();
-        }
-
         addBtn.addEventListener('click', addTask);
-        taskInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addTask();
-        });
+        taskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(); });
 
-        // Вэб хуудас нээгдэхэд даалгавруудыг ачаална
-        fetchTasks();
+        // ===== Тэмдэглэх =====
+        async function toggleTask(id, current) {
+            const { error } = await db.from('todos').update({ is_completed: !current }).eq('id', id);
+            if (!error) fetchTasks();
+        }
+
+        // ===== Устгах =====
+        async function deleteTask(id) {
+            const { error } = await db.from('todos').delete().eq('id', id);
+            if (!error) fetchTasks();
+        }
     </script>
 </body>
 </html>
