@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Миний Даалгаврын Жагсаалт</title>
-    <!-- Supabase-тэй холбогдох албан ёсны сан -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body {
@@ -31,7 +30,7 @@
         li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; }
         .task-text { cursor: pointer; flex: 1; }
         .completed { text-decoration: line-through; color: #9ca3af; }
-        .del-btn { background: #ef4444; padding: 6px 12px; font-size: 14px; }
+        .del-btn { background: #ef4444; padding: 6px 12px; font-size: 14px; color: white; border: none; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -46,11 +45,12 @@
     </div>
 
     <script>
-        // 1. ӨӨРИЙН СУПАБЭЙС ХАЯГИЙГ ЭНД ТАВИАРАЙ
+        // ⚠️ ӨӨРИЙН СУПАБЭЙС ХАЯГУУДАА ХАНШИЛТАН ДОТОР ЗӨВ ОРУУЛААРАЙ!
         const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK'; 
         
-        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Алдаанаас сэргийлж хувьсагчийн нэрийг 'supabaseClient' болгож өөрчлөв
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const taskInput = document.getElementById('task-input');
         const addBtn = document.getElementById('add-btn');
@@ -58,7 +58,7 @@
 
         // Өгөгдлийн сангаас даалгавруудыг татаж унших функц
         async function fetchTasks() {
-            const { data: todos, error } = await supabase
+            const { data: todos, error } = await supabaseClient
                 .from('todos')
                 .select('*')
                 .order('id', { ascending: true });
@@ -94,11 +94,13 @@
             const text = taskInput.value.trim();
             if (text === '') return;
 
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('todos')
                 .insert([{ title: text, is_completed: false }]);
 
-            if (!error) {
+            if (error) {
+                console.error('Нэмэхэд алдаа гарлаа:', error);
+            } else {
                 taskInput.value = '';
                 fetchTasks();
             }
@@ -106,7 +108,7 @@
 
         // Даалгаврыг хийж дууссан эсэхийг өөрчлөх
         async function toggleTask(id, currentStatus) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('todos')
                 .update({ is_completed: !currentStatus })
                 .eq('id', id);
@@ -116,7 +118,7 @@
 
         // Даалгаврыг өгөгдлийн сангаас устгах
         async function deleteTask(id) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('todos')
                 .delete()
                 .eq('id', id);
