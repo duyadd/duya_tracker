@@ -6,6 +6,8 @@
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
 <title>Хувийн — Төлөвлөгөө</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,7 +20,8 @@
   <div class="add-card">
     <div class="row">
       <input type="text" id="task-input" placeholder="Юу хийх вэ?">
-      <input type="date" id="due-input">
+      <input type="text" id="due-input" placeholder="Огноо" style="width:120px">
+      <input type="time" id="time-input" title="Цаг (заавал биш)">
       <select id="prio-input">
         <option value="0">Энгийн</option>
         <option value="1">Дунд ⚑</option>
@@ -37,6 +40,7 @@
 requireAuth('personal', (user) => {
   const taskInput = document.getElementById('task-input');
   const dueInput = document.getElementById('due-input');
+  const timeInput = document.getElementById('time-input');
   const prioInput = document.getElementById('prio-input');
   const list = document.getElementById('task-list');
   const empty = document.getElementById('empty');
@@ -109,16 +113,18 @@ requireAuth('personal', (user) => {
     await db.from('todos').insert([{
       title, is_completed: false, category: CATEGORY,
       due_date: dueInput.value || null,
+      due_time: timeInput.value || null,
       priority: parseInt(prioInput.value, 10),
       folder_id: activeFolder === 'all' ? null : activeFolder
     }]);
-    taskInput.value = ''; dueInput.value = ''; prioInput.value = '0';
+    taskInput.value = ''; dueInput.value = ''; timeInput.value = ''; prioInput.value = '0';
     loadTasks();
   }
 
   document.getElementById('add-btn').onclick = add;
   taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') add(); });
 
+  attachDatePicker(dueInput, false);
   loadFolders();
   loadTasks();
 });

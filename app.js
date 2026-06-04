@@ -47,6 +47,10 @@ function formatDate(d) {
   const date = new Date(d + 'T00:00:00');
   return date.toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' });
 }
+function formatTime(t) {
+  if (!t) return '';
+  return t.slice(0, 5); // 'HH:MM:SS' -> 'HH:MM'
+}
 function isOverdue(d, completed) {
   if (!d || completed) return false;
   const today = new Date(); today.setHours(0,0,0,0);
@@ -55,6 +59,21 @@ function isOverdue(d, completed) {
 
 // ===== Чухал зэргийн нэр =====
 const PRIORITY_LABELS = { 0: '', 1: 'Дунд', 2: 'Өндөр' };
+
+// ===== Явцын төлөв =====
+const STATUS_LABELS = { todo: 'Эхлээгүй', doing: 'Явц дээр', done: 'Дууссан' };
+
+// ===== Flatpickr огноо сонгогч холбох (цаг заавал биш) =====
+// el — input элемент. Flatpickr ачаалагдсан бол гоё календарь, үгүй бол уугуул input.
+function attachDatePicker(el, withTime) {
+  if (typeof flatpickr === 'undefined') return; // CDN ачаалагдаагүй бол уугуул input хэвээр
+  flatpickr(el, {
+    dateFormat: withTime ? 'Y-m-d H:i' : 'Y-m-d',
+    enableTime: !!withTime,
+    time_24hr: true,
+    allowInput: true
+  });
+}
 
 // ===== Нэг даалгаврын <li> элемент үүсгэх =====
 // onChange — toggle/delete/edit хийсний дараа жагсаалтыг дахин ачаалах callback
@@ -67,11 +86,16 @@ function buildTaskLi(task, onChange) {
     li.innerHTML = '';
     li.className = 'task';
 
+    // Check (дарахад дууссан/буцаах)
     const check = document.createElement('div');
     check.className = 'check' + (task.is_completed ? ' done' : '');
     check.innerText = '✓';
     check.onclick = async () => {
-      await db.from('todos').update({ is_completed: !task.is_completed }).eq('id', task.id);
+      const nowDone = !task.is_completed;
+      await db.from('todos').update({
+        is_completed: nowDone,
+        status: nowDone ? 'done' : 'todo'
+      }).eq('id', task.id);
       onChange();
     };
 
@@ -105,6 +129,25 @@ function buildTaskLi(task, onChange) {
     // Шошгууд
     const meta = document.createElement('div');
     meta.className = 'task-meta';
+
+    // Төлөв (дарахад эхлээгүй -> явц дээр -> дууссан -> эхлээгүй)
+    const statusTag = document.createElement('span');
+    const st = task.status || (task.is_completed ? 'done' : 'todo');
+    statusTag.className = 'tag status status-' + st;
+    statusTag.innerText = STATUS_LABELS[st];
+    statusTag.title = 'Дарж төлөв солих';
+    statusTag.style.cursor = 'pointer';
+    statusTag.onclick = async () => {
+      const order = ['todo', 'doing', 'done'];
+      const next = order[(order.indexOf(st) + 1) % 3];
+      await db.from('todos').update({
+        status: next,
+        is_completed: next === 'done'
+      }).eq('id', task.id);
+      onChange();
+    };
+    meta.appendChild(statusTag);
+
     const catTag = document.createElement('span');
     catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
     catTag.innerText = task.category === 'work' ? 'Ажил' : 'Хувийн';
@@ -118,7 +161,9 @@ function buildTaskLi(task, onChange) {
     if (task.due_date) {
       const dueTag = document.createElement('span');
       dueTag.className = 'tag due' + (isOverdue(task.due_date, task.is_completed) ? ' overdue' : '');
-      dueTag.innerText = '📅 ' + formatDate(task.due_date);
+      let dueText = '📅 ' + formatDate(task.due_date);
+      if (task.due_time) dueText += ' ' + formatTime(task.due_time);
+      dueTag.innerText = dueText;
       meta.appendChild(dueTag);
     }
     main.appendChild(meta);
@@ -162,8 +207,15 @@ function buildTaskLi(task, onChange) {
     row.className = 'edit-row';
 
     const dueInput = document.createElement('input');
-    dueInput.type = 'date';
+    dueInput.type = 'text';
+    dueInput.placeholder = 'Огноо';
+    dueInput.style.width = '130px';
     if (task.due_date) dueInput.value = task.due_date;
+
+    const timeInput = document.createElement('input');
+    timeInput.type = 'time';
+    timeInput.title = 'Цаг (заавал биш)';
+    if (task.due_time) timeInput.value = formatTime(task.due_time);
 
     const catSelect = document.createElement('select');
     catSelect.innerHTML = `
@@ -178,6 +230,13 @@ function buildTaskLi(task, onChange) {
       <option value="2">Өндөр ⚑</option>`;
     prioSelect.value = String(task.priority || 0);
 
+    const statusSelect = document.createElement('select');
+    statusSelect.innerHTML = `
+      <option value="todo">Эхлээгүй</option>
+      <option value="doing">Явц дээр</option>
+      <option value="done">Дууссан</option>`;
+    statusSelect.value = task.status || (task.is_completed ? 'done' : 'todo');
+
     const actions = document.createElement('div');
     actions.className = 'edit-actions';
     const save = document.createElement('button');
@@ -186,12 +245,16 @@ function buildTaskLi(task, onChange) {
     save.onclick = async () => {
       const newTitle = titleInput.value.trim();
       if (!newTitle) { titleInput.focus(); return; }
+      const st = statusSelect.value;
       await db.from('todos').update({
         title: newTitle,
         description: descInput.value.trim() || null,
         due_date: dueInput.value || null,
+        due_time: timeInput.value || null,
         category: catSelect.value,
-        priority: parseInt(prioSelect.value, 10)
+        priority: parseInt(prioSelect.value, 10),
+        status: st,
+        is_completed: st === 'done'
       }).eq('id', task.id);
       onChange();
     };
@@ -201,9 +264,10 @@ function buildTaskLi(task, onChange) {
     cancel.onclick = renderView;
     actions.append(save, cancel);
 
-    row.append(dueInput, catSelect, prioSelect, actions);
+    row.append(dueInput, timeInput, catSelect, prioSelect, statusSelect, actions);
     form.append(titleInput, descInput, row);
     li.append(form);
+    attachDatePicker(dueInput, false); // огнооны гоё календарь
     titleInput.focus();
   }
 

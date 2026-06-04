@@ -114,6 +114,14 @@ li.task {
 .prio-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .prio-dot.p1 { background: var(--accent); }
 .prio-dot.p2 { background: var(--danger); }
+
+/* Status badges */
+.tag.status-todo { background: var(--surface); color: var(--muted); border: 1px solid var(--border); }
+.tag.status-doing { background: rgba(91,155,213,0.18); color: var(--personal); }
+.tag.status-done { background: rgba(76,175,80,0.18); color: var(--done); }
+.tag.status-todo { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.tag.status-doing { background: rgba(91,155,213,0.18); color: var(--personal); }
+.tag.status-done { background: rgba(76,175,80,0.18); color: var(--done); }
 .del-btn { background: transparent; color: var(--muted); font-size: 18px; padding: 4px 8px; }
 .del-btn:hover { color: var(--danger); }
 .edit-btn { background: transparent; color: var(--muted); font-size: 15px; padding: 4px 8px; }
