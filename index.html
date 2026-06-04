@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Миний Даалгаврын Жагсаалт</title>
+    <!-- Supabase-тэй холбогдох албан ёсны сан -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 { text-align: center; margin-top: 0; color: #1f2937; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input { flex: 1; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 16px; }
+        button { background: #4f46e5; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #e5e7eb; }
+        .task-text { cursor: pointer; flex: 1; }
+        .completed { text-decoration: line-through; color: #9ca3af; }
+        .del-btn { background: #ef4444; padding: 6px 12px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Миний Төлөвлөгөө</h1>
+        <div class="input-group">
+            <input type="text" id="task-input" placeholder="Юу хийх вэ?">
+            <button id="add-btn">Нэмэх</button>
+        </div>
+        <ul id="task-list"></ul>
+    </div>
+
+    <script>
+        // 1. ӨӨРИЙН СУПАБЭЙС ХАЯГИЙГ ЭНД ТАВИАРАЙ
+        const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
+        
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const taskInput = document.getElementById('task-input');
+        const addBtn = document.getElementById('add-btn');
+        const taskList = document.getElementById('task-list');
+
+        // Өгөгдлийн сангаас даалгавруудыг татаж унших функц
+        async function fetchTasks() {
+            const { data: todos, error } = await supabase
+                .from('todos')
+                .select('*')
+                .order('id', { ascending: true });
+
+            if (error) {
+                console.error('Алдаа гарлаа:', error);
+                return;
+            }
+
+            taskList.innerHTML = '';
+            todos.forEach(task => {
+                const li = document.createElement('li');
+                
+                const span = document.createElement('span');
+                span.className = 'task-text';
+                span.innerText = task.title;
+                if (task.is_completed) span.classList.add('completed');
+                span.onclick = () => toggleTask(task.id, task.is_completed);
+
+                const delBtn = document.createElement('button');
+                delBtn.className = 'del-btn';
+                delBtn.innerText = 'Устгах';
+                delBtn.onclick = () => deleteTask(task.id);
+
+                li.appendChild(span);
+                li.appendChild(delBtn);
+                taskList.appendChild(li);
+            });
+        }
+
+        // Шинэ даалгавар өгөгдлийн санд нэмэх
+        async function addTask() {
+            const text = taskInput.value.trim();
+            if (text === '') return;
+
+            const { error } = await supabase
+                .from('todos')
+                .insert([{ title: text, is_completed: false }]);
+
+            if (!error) {
+                taskInput.value = '';
+                fetchTasks();
+            }
+        }
+
+        // Даалгаврыг хийж дууссан эсэхийг өөрчлөх
+        async function toggleTask(id, currentStatus) {
+            const { error } = await supabase
+                .from('todos')
+                .update({ is_completed: !currentStatus })
+                .eq('id', id);
+
+            if (!error) fetchTasks();
+        }
+
+        // Даалгаврыг өгөгдлийн сангаас устгах
+        async function deleteTask(id) {
+            const { error } = await supabase
+                .from('todos')
+                .delete()
+                .eq('id', id);
+
+            if (!error) fetchTasks();
+        }
+
+        addBtn.addEventListener('click', addTask);
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Вэб хуудас нээгдэхэд даалгавруудыг ачаална
+        fetchTasks();
+    </script>
+</body>
+</html>
