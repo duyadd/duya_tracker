@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Дууссан — Төлөвлөгөө</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Дууссан даалгавар</h2>
+  <p class="subtitle">Биелүүлсэн ажлуудын түүх</p>
+
+  <div class="folder-bar" id="cat-bar"></div>
+  <div class="folder-bar" id="folder-bar"></div>
+
+  <ul id="task-list"></ul>
+  <div class="empty hidden" id="empty">Дууссан даалгавар алга</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('done', (user) => {
+  const list = document.getElementById('task-list');
+  const empty = document.getElementById('empty');
+  const catBar = document.getElementById('cat-bar');
+  const folderBar = document.getElementById('folder-bar');
+
+  let folders = [];
+  let activeCat = 'all';      // 'all' | 'personal' | 'work'
+  let activeFolder = 'all';   // 'all' | folder id
+
+  async function loadFolders() {
+    const { data } = await db.from('folders').select('*').order('id', { ascending: true });
+    folders = data || [];
+  }
+
+  function renderCatBar() {
+    catBar.innerHTML = '';
+    const opts = [
+      { v: 'all', label: 'Бүгд' },
+      { v: 'personal', label: 'Хувийн' },
+      { v: 'work', label: 'Ажил' }
+    ];
+    opts.forEach(o => {
+      const chip = document.createElement('div');
+      chip.className = 'folder-chip' + (activeCat === o.v ? ' active' : '');
+      chip.innerText = o.label;
+      chip.onclick = () => {
+        activeCat = o.v;
+        activeFolder = 'all'; // ангилал солиход фолдер шүүлт цэвэрлэх
+        render();
+      };
+      catBar.appendChild(chip);
+    });
+  }
+
+  function renderFolderBar() {
+    folderBar.innerHTML = '';
+    // Зөвхөн сонгосон ангилалд хамаарах фолдеруудыг харуулна
+    if (activeCat === 'all') { folderBar.classList.add('hidden'); return; }
+    folderBar.classList.remove('hidden');
+
+    const relevant = folders.filter(f => (f.category || 'work') === activeCat);
+    if (relevant.length === 0) { folderBar.classList.add('hidden'); return; }
+
+    const allChip = document.createElement('div');
+    allChip.className = 'folder-chip' + (activeFolder === 'all' ? ' active' : '');
+    allChip.innerText = 'Бүх фолдер';
+    allChip.onclick = () => { activeFolder = 'all'; render(); };
+    folderBar.appendChild(allChip);
+
+    relevant.forEach(f => {
+      const chip = document.createElement('div');
+      chip.className = 'folder-chip' + (activeFolder === f.id ? ' active' : '');
+      chip.innerText = '📁 ' + f.name;
+      chip.onclick = () => { activeFolder = f.id; render(); };
+      folderBar.appendChild(chip);
+    });
+  }
+
+  async function loadTasks() {
+    let q = db.from('todos').select('*').eq('is_completed', true);
+    if (activeCat !== 'all') q = q.eq('category', activeCat);
+    if (activeFolder !== 'all') q = q.eq('folder_id', activeFolder);
+    const { data } = await q.order('id', { ascending: false }); // сүүлд дууссан нь дээр
+    list.innerHTML = '';
+    if (!data || data.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    data.forEach(t => list.appendChild(buildTaskLi(t, render)));
+  }
+
+  function render() {
+    renderCatBar();
+    renderFolderBar();
+    loadTasks();
+  }
+
+  (async () => {
+    await loadFolders();
+    render();
+  })();
+});
+</script>
+</body>
+</html>

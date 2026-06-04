@@ -93,7 +93,7 @@ requireAuth('work', (user) => {
   }
 
   async function loadTasks() {
-    let q = db.from('todos').select('*').eq('category', CATEGORY);
+    let q = db.from('todos').select('*').eq('category', CATEGORY).eq('is_completed', false);
     if (activeFolder !== 'all') q = q.eq('folder_id', activeFolder);
     const { data } = await q.order('priority', { ascending: false }).order('id', { ascending: true });
     list.innerHTML = '';

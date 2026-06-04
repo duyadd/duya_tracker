@@ -13,6 +13,7 @@ function renderNav(active) {
     <a href="index.html" data-page="home">Нүүр</a>
     <a href="personal.html" data-page="personal">Хувийн</a>
     <a href="work.html" data-page="work">Ажил</a>
+    <a href="done.html" data-page="done">Дууссан</a>
     <span class="spacer"></span>
     <span class="user" id="nav-user"></span>
     <button id="nav-logout">Гарах</button>
