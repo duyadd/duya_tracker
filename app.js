@@ -13,6 +13,7 @@ function renderNav(active) {
     <a href="index.html" data-page="home">Нүүр</a>
     <a href="personal.html" data-page="personal">Хувийн</a>
     <a href="work.html" data-page="work">Ажил</a>
+    <a href="calendar.html" data-page="calendar">Хуваарь</a>
     <a href="done.html" data-page="done">Дууссан</a>
     <span class="spacer"></span>
     <span class="user" id="nav-user"></span>
@@ -114,7 +115,7 @@ function buildTaskLi(task, onChange) {
     }
     const title = document.createElement('div');
     title.className = 'task-title' + (task.is_completed ? ' completed' : '');
-    title.innerText = task.title;
+    title.innerText = (task.kind === 'meeting' ? '👥 ' : '') + task.title;
     titleRow.appendChild(title);
     main.appendChild(titleRow);
 
@@ -165,6 +166,13 @@ function buildTaskLi(task, onChange) {
       if (task.due_time) dueText += ' ' + formatTime(task.due_time);
       dueTag.innerText = dueText;
       meta.appendChild(dueTag);
+    }
+    if (task.assignee) {
+      const aTag = document.createElement('span');
+      aTag.className = 'tag';
+      aTag.style.cssText = 'background:var(--bg);color:var(--muted);border:1px solid var(--border);';
+      aTag.innerText = '👤 ' + task.assignee;
+      meta.appendChild(aTag);
     }
     main.appendChild(meta);
 
@@ -237,6 +245,18 @@ function buildTaskLi(task, onChange) {
       <option value="done">Дууссан</option>`;
     statusSelect.value = task.status || (task.is_completed ? 'done' : 'todo');
 
+    const kindSelect = document.createElement('select');
+    kindSelect.innerHTML = `
+      <option value="task">Даалгавар</option>
+      <option value="meeting">Уулзалт 👥</option>`;
+    kindSelect.value = task.kind === 'meeting' ? 'meeting' : 'task';
+
+    const assigneeInput = document.createElement('input');
+    assigneeInput.type = 'text';
+    assigneeInput.placeholder = 'Хариуцах хүн (заавал биш)';
+    assigneeInput.value = task.assignee || '';
+    assigneeInput.style.cssText = 'margin-bottom:8px;';
+
     const actions = document.createElement('div');
     actions.className = 'edit-actions';
     const save = document.createElement('button');
@@ -254,7 +274,9 @@ function buildTaskLi(task, onChange) {
         category: catSelect.value,
         priority: parseInt(prioSelect.value, 10),
         status: st,
-        is_completed: st === 'done'
+        is_completed: st === 'done',
+        kind: kindSelect.value,
+        assignee: assigneeInput.value.trim() || null
       }).eq('id', task.id);
       onChange();
     };
@@ -264,8 +286,8 @@ function buildTaskLi(task, onChange) {
     cancel.onclick = renderView;
     actions.append(save, cancel);
 
-    row.append(dueInput, timeInput, catSelect, prioSelect, statusSelect, actions);
-    form.append(titleInput, descInput, row);
+    row.append(dueInput, timeInput, catSelect, prioSelect, statusSelect, kindSelect, actions);
+    form.append(titleInput, descInput, assigneeInput, row);
     li.append(form);
     attachDatePicker(dueInput, false); // огнооны гоё календарь
     titleInput.focus();

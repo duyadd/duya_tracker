@@ -27,6 +27,10 @@
         <option value="1">Дунд ⚑</option>
         <option value="2">Өндөр ⚑</option>
       </select>
+      <select id="kind-input" title="Төрөл">
+        <option value="task">Даалгавар</option>
+        <option value="meeting">Уулзалт 👥</option>
+      </select>
       <button id="add-btn">Нэмэх</button>
     </div>
   </div>
@@ -42,6 +46,7 @@ requireAuth('work', (user) => {
   const dueInput = document.getElementById('due-input');
   const timeInput = document.getElementById('time-input');
   const prioInput = document.getElementById('prio-input');
+  const kindInput = document.getElementById('kind-input');
   const list = document.getElementById('task-list');
   const empty = document.getElementById('empty');
   const folderBar = document.getElementById('folder-bar');
@@ -114,9 +119,10 @@ requireAuth('work', (user) => {
       due_date: dueInput.value || null,
       due_time: timeInput.value || null,
       priority: parseInt(prioInput.value, 10),
+      kind: kindInput.value,
       folder_id: activeFolder === 'all' ? null : activeFolder
     }]);
-    taskInput.value = ''; dueInput.value = ''; timeInput.value = ''; prioInput.value = '0';
+    taskInput.value = ''; dueInput.value = ''; timeInput.value = ''; prioInput.value = '0'; kindInput.value = 'task';
     loadTasks();
   }
 
