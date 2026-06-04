@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Хувийн — Төлөвлөгөө</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Хувийн даалгавар</h2>
+  <p class="subtitle">Өдөр тутмын хувийн ажлууд</p>
+
+  <div class="add-card">
+    <div class="row">
+      <input type="text" id="task-input" placeholder="Юу хийх вэ?">
+      <input type="date" id="due-input">
+      <button id="add-btn">Нэмэх</button>
+    </div>
+  </div>
+
+  <ul id="task-list"></ul>
+  <div class="empty hidden" id="empty">Одоогоор даалгавар алга 🌙</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('personal', (user) => {
+  const taskInput = document.getElementById('task-input');
+  const dueInput = document.getElementById('due-input');
+  const list = document.getElementById('task-list');
+  const empty = document.getElementById('empty');
+
+  async function load() {
+    const { data } = await db.from('todos').select('*')
+      .eq('category', 'personal').order('id', { ascending: true });
+    list.innerHTML = '';
+    if (!data || data.length === 0) { empty.classList.remove('hidden'); return; }
+    empty.classList.add('hidden');
+    data.forEach(t => list.appendChild(buildTaskLi(t, load)));
+  }
+
+  async function add() {
+    const title = taskInput.value.trim();
+    if (!title) return;
+    await db.from('todos').insert([{
+      title, is_completed: false, category: 'personal',
+      due_date: dueInput.value || null
+    }]);
+    taskInput.value = ''; dueInput.value = '';
+    load();
+  }
+
+  document.getElementById('add-btn').onclick = add;
+  taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') add(); });
+  load();
+});
+</script>
+</body>
+</html>

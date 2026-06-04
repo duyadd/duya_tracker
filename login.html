@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Нэвтрэх — Төлөвлөгөө</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-box">
+  <h1>Миний Төлөвлөгөө</h1>
+  <p class="sub" id="sub">Нэвтэрч орно уу</p>
+  <div id="msg" class="msg"></div>
+  <label>Имэйл</label>
+  <input type="email" id="email" placeholder="name@example.com" autocomplete="username">
+  <label>Нууц үг</label>
+  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+  <button class="btn-primary" id="auth-btn">Нэвтрэх</button>
+  <div class="switch-link"><span id="switch-text">Бүртгэлгүй юу?</span> <a id="switch-link">Бүртгүүлэх</a></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  let mode = 'login';
+  const sub = document.getElementById('sub');
+  const msg = document.getElementById('msg');
+  const emailEl = document.getElementById('email');
+  const passEl = document.getElementById('password');
+  const btn = document.getElementById('auth-btn');
+  const switchText = document.getElementById('switch-text');
+  const switchLink = document.getElementById('switch-link');
+
+  // Хэрэв аль хэдийн нэвтэрсэн бол нүүр рүү
+  db.auth.getSession().then(({ data: { session } }) => {
+    if (session) window.location.href = 'index.html';
+  });
+
+  function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
+
+  switchLink.onclick = () => {
+    mode = mode === 'login' ? 'signup' : 'login';
+    if (mode === 'signup') {
+      btn.innerText = 'Бүртгүүлэх'; sub.innerText = 'Шинээр бүртгүүлнэ үү';
+      switchText.innerText = 'Бүртгэлтэй юу?'; switchLink.innerText = 'Нэвтрэх';
+    } else {
+      btn.innerText = 'Нэвтрэх'; sub.innerText = 'Нэвтэрч орно уу';
+      switchText.innerText = 'Бүртгэлгүй юу?'; switchLink.innerText = 'Бүртгүүлэх';
+    }
+    showMsg('', '');
+  };
+
+  btn.onclick = async () => {
+    const email = emailEl.value.trim(), password = passEl.value;
+    if (!email || !password) { showMsg('Имэйл болон нууц үгээ оруулна уу.', 'error'); return; }
+    btn.disabled = true;
+    if (mode === 'signup') {
+      const { error } = await db.auth.signUp({ email, password });
+      if (error) showMsg(error.message, 'error');
+      else showMsg('Бүртгэл амжилттай! Имэйл баталгаажуулалт асаалттай бол имэйлээ шалгана уу, эсвэл шууд нэвтэрнэ үү.', 'info');
+    } else {
+      const { error } = await db.auth.signInWithPassword({ email, password });
+      if (error) showMsg(error.message, 'error');
+      else window.location.href = 'index.html';
+    }
+    btn.disabled = false;
+  };
+  passEl.addEventListener('keypress', e => { if (e.key === 'Enter') btn.click(); });
+</script>
+</body>
+</html>
