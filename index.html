@@ -50,7 +50,7 @@
         const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
         
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const taskInput = document.getElementById('task-input');
         const addBtn = document.getElementById('add-btn');
