@@ -52,6 +52,9 @@ function isOverdue(d, completed) {
   return new Date(d + 'T00:00:00') < today;
 }
 
+// ===== Чухал зэргийн нэр =====
+const PRIORITY_LABELS = { 0: '', 1: 'Дунд', 2: 'Өндөр' };
+
 // ===== Нэг даалгаврын <li> элемент үүсгэх =====
 // onChange — toggle/delete/edit хийсний дараа жагсаалтыг дахин ачаалах callback
 function buildTaskLi(task, onChange) {
@@ -73,22 +76,51 @@ function buildTaskLi(task, onChange) {
 
     const main = document.createElement('div');
     main.className = 'task-main';
+
+    // Гарчгийн мөр (priority цэг + текст)
+    const titleRow = document.createElement('div');
+    titleRow.style.display = 'flex';
+    titleRow.style.alignItems = 'center';
+    titleRow.style.gap = '8px';
+    if (task.priority > 0) {
+      const dot = document.createElement('div');
+      dot.className = 'prio-dot p' + task.priority;
+      titleRow.appendChild(dot);
+    }
     const title = document.createElement('div');
     title.className = 'task-title' + (task.is_completed ? ' completed' : '');
     title.innerText = task.title;
+    titleRow.appendChild(title);
+    main.appendChild(titleRow);
+
+    // Тайлбар (байвал)
+    if (task.description) {
+      const desc = document.createElement('div');
+      desc.className = 'task-desc';
+      desc.innerText = task.description;
+      main.appendChild(desc);
+    }
+
+    // Шошгууд
     const meta = document.createElement('div');
     meta.className = 'task-meta';
     const catTag = document.createElement('span');
     catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
     catTag.innerText = task.category === 'work' ? 'Ажил' : 'Хувийн';
     meta.appendChild(catTag);
+    if (task.priority > 0) {
+      const pTag = document.createElement('span');
+      pTag.className = 'tag prio-' + task.priority;
+      pTag.innerText = '⚑ ' + PRIORITY_LABELS[task.priority];
+      meta.appendChild(pTag);
+    }
     if (task.due_date) {
       const dueTag = document.createElement('span');
       dueTag.className = 'tag due' + (isOverdue(task.due_date, task.is_completed) ? ' overdue' : '');
       dueTag.innerText = '📅 ' + formatDate(task.due_date);
       meta.appendChild(dueTag);
     }
-    main.append(title, meta);
+    main.appendChild(meta);
 
     const edit = document.createElement('button');
     edit.className = 'edit-btn';
@@ -117,6 +149,13 @@ function buildTaskLi(task, onChange) {
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.value = task.title;
+    titleInput.placeholder = 'Гарчиг';
+
+    const descInput = document.createElement('textarea');
+    descInput.value = task.description || '';
+    descInput.placeholder = 'Тайлбар (заавал биш)';
+    descInput.rows = 3;
+    descInput.style.cssText = 'width:100%;padding:11px 13px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:8px;resize:vertical;';
 
     const row = document.createElement('div');
     row.className = 'edit-row';
@@ -131,6 +170,13 @@ function buildTaskLi(task, onChange) {
       <option value="work">Ажил</option>`;
     catSelect.value = task.category === 'work' ? 'work' : 'personal';
 
+    const prioSelect = document.createElement('select');
+    prioSelect.innerHTML = `
+      <option value="0">Энгийн</option>
+      <option value="1">Дунд ⚑</option>
+      <option value="2">Өндөр ⚑</option>`;
+    prioSelect.value = String(task.priority || 0);
+
     const actions = document.createElement('div');
     actions.className = 'edit-actions';
     const save = document.createElement('button');
@@ -141,8 +187,10 @@ function buildTaskLi(task, onChange) {
       if (!newTitle) { titleInput.focus(); return; }
       await db.from('todos').update({
         title: newTitle,
+        description: descInput.value.trim() || null,
         due_date: dueInput.value || null,
-        category: catSelect.value
+        category: catSelect.value,
+        priority: parseInt(prioSelect.value, 10)
       }).eq('id', task.id);
       onChange();
     };
@@ -152,12 +200,10 @@ function buildTaskLi(task, onChange) {
     cancel.onclick = renderView;
     actions.append(save, cancel);
 
-    row.append(dueInput, catSelect, actions);
-    form.append(titleInput, row);
+    row.append(dueInput, catSelect, prioSelect, actions);
+    form.append(titleInput, descInput, row);
     li.append(form);
     titleInput.focus();
-
-    titleInput.addEventListener('keypress', e => { if (e.key === 'Enter') save.click(); });
   }
 
   renderView();

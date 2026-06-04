@@ -27,9 +27,11 @@ requireAuth('home', async (user) => {
   const active = total - done;
   const personal = list.filter(t => t.category !== 'work' && !t.is_completed).length;
   const work = list.filter(t => t.category === 'work' && !t.is_completed).length;
+  const highPrio = list.filter(t => t.priority === 2 && !t.is_completed).length;
   const pct = total ? Math.round(done / total * 100) : 0;
   document.getElementById('cards').innerHTML = `
     <div class="card"><div class="num">${active}</div><div class="lbl">Хийгдээгүй</div></div>
+    <div class="card"><div class="num">${highPrio}</div><div class="lbl">Өндөр чухал</div></div>
     <div class="card"><div class="num">${personal}</div><div class="lbl">Хувийн</div></div>
     <div class="card"><div class="num">${work}</div><div class="lbl">Ажлын</div></div>
     <div class="card">

@@ -108,6 +108,12 @@ li.task {
 .tag.work { background: rgba(245,166,35,0.15); color: var(--work); }
 .tag.due { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
 .tag.due.overdue { color: var(--danger); border-color: var(--danger); }
+.tag.prio-1 { background: rgba(245,166,35,0.15); color: var(--accent); }
+.tag.prio-2 { background: rgba(226,85,99,0.15); color: var(--danger); }
+.task-desc { font-size: 13px; color: var(--muted); margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
+.prio-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.prio-dot.p1 { background: var(--accent); }
+.prio-dot.p2 { background: var(--danger); }
 .del-btn { background: transparent; color: var(--muted); font-size: 18px; padding: 4px 8px; }
 .del-btn:hover { color: var(--danger); }
 .edit-btn { background: transparent; color: var(--muted); font-size: 15px; padding: 4px 8px; }
