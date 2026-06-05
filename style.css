@@ -445,8 +445,12 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
   height: 6px; background: var(--surface-3); border-radius: 99px;
   overflow: hidden; margin-bottom: 20px;
 }
+.fd-ctrl-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
 .fd-sort-bar {
-  display: flex; gap: 6px; margin-bottom: 16px;
+  display: flex; gap: 6px;
 }
 .fd-sort-btn {
   padding: 6px 14px; font-size: 13px; font-weight: 500;
