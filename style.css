@@ -117,6 +117,18 @@ body {
 }
 .nav a:hover { color: var(--text); background: var(--surface-2); }
 .nav a.active { color: var(--accent); background: var(--accent-glow); }
+.nav-sub { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 4px; }
+.nav-folder {
+  color: var(--muted-2) !important;
+  font-size: 13px !important;
+  padding: 7px 12px 7px 28px !important;
+  font-weight: 400 !important;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: color 0.18s var(--ease), background 0.18s var(--ease);
+}
+.nav-folder:hover { color: var(--text) !important; background: var(--surface-2); }
+.nav-folder.active { color: var(--accent) !important; background: var(--accent-glow); }
 .nav-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-soft); }
 .nav .user { font-size: 12px; color: var(--muted-2); display: block; padding: 0 10px 10px; word-break: break-all; }
 .nav-footer-row { display: flex; gap: 8px; }

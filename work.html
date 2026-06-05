@@ -52,7 +52,8 @@ requireAuth('work', (user) => {
   const folderBar = document.getElementById('folder-bar');
 
   let folders = [];
-  let activeFolder = 'all';
+  const _params = new URLSearchParams(window.location.search);
+  let activeFolder = _params.get('folder') || 'all';
   const CATEGORY = 'work';
 
   async function loadFolders() {
@@ -72,7 +73,7 @@ requireAuth('work', (user) => {
 
     folders.forEach(f => {
       const chip = document.createElement('div');
-      chip.className = 'folder-chip' + (activeFolder === f.id ? ' active' : '');
+      chip.className = 'folder-chip' + (String(activeFolder) === String(f.id) ? ' active' : '');
       const label = document.createElement('span');
       label.innerText = '📁 ' + f.name;
       label.onclick = () => { activeFolder = f.id; renderFolders(); loadTasks(); };
@@ -82,7 +83,7 @@ requireAuth('work', (user) => {
         e.stopPropagation();
         if (!confirm(`"${f.name}" фолдерыг устгах уу? (доторх даалгаврууд устахгүй, зүгээр фолдергүй болно)`)) return;
         await db.from('folders').delete().eq('id', f.id);
-        if (activeFolder === f.id) activeFolder = 'all';
+        if (String(activeFolder) === String(f.id)) activeFolder = 'all';
         loadFolders(); loadTasks();
       };
       chip.append(label, x);

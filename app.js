@@ -26,7 +26,7 @@ function updateThemeBtn() {
 applyTheme(getTheme());
 
 // ===== Навигаци зурах (зүүн талын sidebar) =====
-function renderNav(active) {
+async function renderNav(active) {
   // Мобайл нээх товч
   const burger = document.createElement('button');
   burger.className = 'nav-burger';
@@ -46,7 +46,9 @@ function renderNav(active) {
     <nav class="nav-links">
       <a href="index.html" data-page="home">🏠 Нүүр</a>
       <a href="personal.html" data-page="personal">👤 Хувийн</a>
+      <div class="nav-sub" id="sub-personal"></div>
       <a href="work.html" data-page="work">💼 Ажил</a>
+      <div class="nav-sub" id="sub-work"></div>
       <a href="calendar.html" data-page="calendar">📅 Хуваарь</a>
       <a href="done.html" data-page="done">✓ Дууссан</a>
     </nav>
@@ -73,6 +75,32 @@ function renderNav(active) {
   overlay.addEventListener('click', () => {
     nav.classList.remove('open');
     overlay.classList.remove('show');
+  });
+
+  // Фолдеруудыг ачаалж дэд цэст харуулах
+  await renderNavFolders(active);
+}
+
+// Sidebar доторх фолдер дэд цэс
+async function renderNavFolders(active) {
+  const { data } = await db.from('folders').select('*').order('id', { ascending: true });
+  const folders = data || [];
+  const params = new URLSearchParams(window.location.search);
+  const activeFolder = params.get('folder');
+
+  ['personal', 'work'].forEach(cat => {
+    const container = document.getElementById('sub-' + cat);
+    if (!container) return;
+    const catFolders = folders.filter(f => (f.category || 'work') === cat);
+    container.innerHTML = '';
+    catFolders.forEach(f => {
+      const a = document.createElement('a');
+      a.className = 'nav-folder';
+      a.href = cat + '.html?folder=' + f.id;
+      a.innerText = '📁 ' + f.name;
+      if (active === cat && String(activeFolder) === String(f.id)) a.classList.add('active');
+      container.appendChild(a);
+    });
   });
 }
 
