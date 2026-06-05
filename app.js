@@ -50,7 +50,6 @@ async function renderNav(active) {
       <a href="work.html" data-page="work">💼 Ажил</a>
       <div class="nav-sub" id="sub-work"></div>
       <a href="calendar.html" data-page="calendar">📅 Хуваарь</a>
-      <a href="board.html" data-page="board">📊 Явц</a>
       <a href="done.html" data-page="done">✓ Дууссан</a>
     </nav>
     <div class="nav-footer">

@@ -19,6 +19,7 @@
   <div class="view-toggle">
     <button id="btn-today" class="active">Өнөөдөр</button>
     <button id="btn-week">Долоо хоног</button>
+    <button id="btn-progress">Явц</button>
   </div>
 
   <!-- Өнөөдрийн agenda -->
@@ -30,6 +31,12 @@
   <!-- Долоо хоногийн жижиг харагдац -->
   <div id="week-view" class="hidden">
     <div class="week-grid" id="week-grid"></div>
+  </div>
+
+  <!-- Явцын самбар -->
+  <div id="progress-view" class="hidden">
+    <div class="folder-bar" id="board-cat-bar"></div>
+    <div class="board" id="board"></div>
   </div>
 </div>
 
@@ -129,16 +136,111 @@ requireAuth('home', async (user) => {
   // ----- Харагдац солих -----
   const btnToday = document.getElementById('btn-today');
   const btnWeek = document.getElementById('btn-week');
+  const btnProgress = document.getElementById('btn-progress');
   const todayView = document.getElementById('today-view');
   const weekView = document.getElementById('week-view');
-  btnToday.onclick = () => {
-    btnToday.classList.add('active'); btnWeek.classList.remove('active');
-    todayView.classList.remove('hidden'); weekView.classList.add('hidden');
-  };
-  btnWeek.onclick = () => {
-    btnWeek.classList.add('active'); btnToday.classList.remove('active');
-    weekView.classList.remove('hidden'); todayView.classList.add('hidden');
-  };
+  const progressView = document.getElementById('progress-view');
+
+  function setView(which) {
+    [btnToday, btnWeek, btnProgress].forEach(b => b.classList.remove('active'));
+    [todayView, weekView, progressView].forEach(v => v.classList.add('hidden'));
+    if (which === 'today') { btnToday.classList.add('active'); todayView.classList.remove('hidden'); }
+    if (which === 'week') { btnWeek.classList.add('active'); weekView.classList.remove('hidden'); }
+    if (which === 'progress') { btnProgress.classList.add('active'); progressView.classList.remove('hidden'); renderBoard(); }
+  }
+  btnToday.onclick = () => setView('today');
+  btnWeek.onclick = () => setView('week');
+  btnProgress.onclick = () => setView('progress');
+
+  // ----- Явцын самбар (board) -----
+  const board = document.getElementById('board');
+  const boardCatBar = document.getElementById('board-cat-bar');
+  let boardCat = 'all';
+  const COLUMNS = [
+    { key: 'todo',  label: 'Эхлээгүй' },
+    { key: 'doing', label: 'Явц дээр' },
+    { key: 'done',  label: 'Дууссан' }
+  ];
+
+  function renderBoardCatBar() {
+    boardCatBar.innerHTML = '';
+    [['all','Бүгд'], ['personal','Хувийн'], ['work','Ажил']].forEach(([v, label]) => {
+      const chip = document.createElement('div');
+      chip.className = 'folder-chip' + (boardCat === v ? ' active' : '');
+      chip.innerText = label;
+      chip.onclick = () => { boardCat = v; renderBoardCatBar(); renderBoard(); };
+      boardCatBar.appendChild(chip);
+    });
+  }
+
+  function renderBoard() {
+    renderBoardCatBar();
+    const filtered = boardCat === 'all' ? list : list.filter(t => t.category === boardCat);
+    board.innerHTML = '';
+    COLUMNS.forEach(col => {
+      const colTasks = filtered.filter(t => {
+        const st = t.status || (t.is_completed ? 'done' : 'todo');
+        return st === col.key;
+      }).sort((a,b) => (b.priority||0) - (a.priority||0));
+
+      const colEl = document.createElement('div');
+      colEl.className = 'board-col';
+      colEl.innerHTML = `
+        <div class="board-col-head">
+          <span class="ttl"><span class="board-dot ${col.key}"></span>${col.label}</span>
+          <span class="cnt">${colTasks.length}</span>
+        </div>`;
+
+      if (colTasks.length === 0) {
+        const e = document.createElement('div');
+        e.className = 'board-empty'; e.innerText = '—';
+        colEl.appendChild(e);
+      }
+
+      colTasks.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'board-card' + (col.key === 'done' ? ' done-card' : '');
+        const title = document.createElement('div');
+        title.className = 'bc-title';
+        title.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
+        const meta = document.createElement('div');
+        meta.className = 'bc-meta';
+        const catTag = document.createElement('span');
+        catTag.className = 'tag ' + (t.category === 'work' ? 'work' : 'personal');
+        catTag.innerText = t.category === 'work' ? 'Ажил' : 'Хувийн';
+        meta.appendChild(catTag);
+        if (t.due_date) {
+          const d = document.createElement('span');
+          d.className = 'tag due' + (isOverdue(t.due_date, t.is_completed) ? ' overdue' : '');
+          d.innerText = '📅 ' + formatDate(t.due_date);
+          meta.appendChild(d);
+        }
+
+        // Dropdown-оор төлөв солих
+        const sel = document.createElement('select');
+        sel.className = 'bc-status-select';
+        sel.innerHTML = `
+          <option value="todo">Эхлээгүй</option>
+          <option value="doing">Явц дээр</option>
+          <option value="done">Дууссан</option>`;
+        sel.value = col.key;
+        sel.onchange = async () => {
+          const next = sel.value;
+          await db.from('todos').update({
+            status: next, is_completed: next === 'done'
+          }).eq('id', t.id);
+          // Локал жагсаалтыг шинэчлээд board дахин зурах
+          t.status = next; t.is_completed = (next === 'done');
+          renderBoard();
+        };
+
+        card.append(title, meta, sel);
+        colEl.appendChild(card);
+      });
+
+      board.appendChild(colEl);
+    });
+  }
 });
 </script>
 </body>
