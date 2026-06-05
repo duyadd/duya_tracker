@@ -231,7 +231,7 @@ button:active { transform: scale(0.97); }
 
 /* ===== Add card ===== */
 .add-card {
-  max-width: 640px;
+  max-width: none;
   background: linear-gradient(165deg, var(--surface), var(--surface-2));
   border: 1px solid var(--border);
   border-radius: var(--radius); padding: 24px; margin-bottom: 28px;
