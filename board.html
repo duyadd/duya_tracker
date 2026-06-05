@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Явц — Төлөвлөгөө</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Явцын самбар</h2>
+  <p class="subtitle">Даалгавруудыг төлвөөр нь харах. Карт дээр дарж дараагийн төлөв рүү шилжүүлнэ.</p>
+
+  <div class="folder-bar" id="cat-bar"></div>
+
+  <div class="board" id="board"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('board', (user) => {
+  const board = document.getElementById('board');
+  const catBar = document.getElementById('cat-bar');
+  let activeCat = 'all'; // 'all' | 'personal' | 'work'
+
+  const COLUMNS = [
+    { key: 'todo',  label: 'Эхлээгүй',  icon: '○' },
+    { key: 'doing', label: 'Явц дээр',  icon: '◐' },
+    { key: 'done',  label: 'Дууссан',   icon: '●' }
+  ];
+  // Дараагийн төлөв (карт дээр дарахад)
+  const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
+
+  function renderCatBar() {
+    catBar.innerHTML = '';
+    [['all','Бүгд'], ['personal','Хувийн'], ['work','Ажил']].forEach(([v, label]) => {
+      const chip = document.createElement('div');
+      chip.className = 'folder-chip' + (activeCat === v ? ' active' : '');
+      chip.innerText = label;
+      chip.onclick = () => { activeCat = v; renderCatBar(); load(); };
+      catBar.appendChild(chip);
+    });
+  }
+
+  async function load() {
+    let q = db.from('todos').select('*');
+    if (activeCat !== 'all') q = q.eq('category', activeCat);
+    const { data } = await q.order('priority', { ascending: false }).order('id', { ascending: true });
+    const tasks = data || [];
+
+    board.innerHTML = '';
+    COLUMNS.forEach(col => {
+      // Төлөв тодорхойлох: status байхгүй бол is_completed-ээс гаргах
+      const colTasks = tasks.filter(t => {
+        const st = t.status || (t.is_completed ? 'done' : 'todo');
+        return st === col.key;
+      });
+
+      const colEl = document.createElement('div');
+      colEl.className = 'board-col';
+      colEl.innerHTML = `
+        <div class="board-col-head">
+          <span class="ttl"><span class="board-dot ${col.key}"></span>${col.label}</span>
+          <span class="cnt">${colTasks.length}</span>
+        </div>`;
+
+      if (colTasks.length === 0) {
+        const e = document.createElement('div');
+        e.className = 'board-empty';
+        e.innerText = '—';
+        colEl.appendChild(e);
+      }
+
+      colTasks.forEach(t => {
+        const card = document.createElement('div');
+        card.className = 'board-card' + (col.key === 'done' ? ' done-card' : '');
+        const title = document.createElement('div');
+        title.className = 'bc-title';
+        title.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
+        const meta = document.createElement('div');
+        meta.className = 'bc-meta';
+        const catTag = document.createElement('span');
+        catTag.className = 'tag ' + (t.category === 'work' ? 'work' : 'personal');
+        catTag.innerText = t.category === 'work' ? 'Ажил' : 'Хувийн';
+        meta.appendChild(catTag);
+        if (t.priority > 0) {
+          const p = document.createElement('span');
+          p.className = 'tag prio-' + t.priority;
+          p.innerText = '⚑';
+          meta.appendChild(p);
+        }
+        if (t.due_date) {
+          const d = document.createElement('span');
+          d.className = 'tag due' + (isOverdue(t.due_date, t.is_completed) ? ' overdue' : '');
+          d.innerText = '📅 ' + formatDate(t.due_date);
+          meta.appendChild(d);
+        }
+        const hint = document.createElement('div');
+        hint.className = 'bc-hint';
+        hint.innerText = 'Дарвал → ' + COLUMNS.find(c => c.key === NEXT[col.key]).label;
+        card.append(title, meta, hint);
+
+        // Карт дээр дарвал дараагийн төлөв рүү
+        card.onclick = async () => {
+          const next = NEXT[col.key];
+          await db.from('todos').update({
+            status: next,
+            is_completed: next === 'done'
+          }).eq('id', t.id);
+          load();
+        };
+
+        colEl.appendChild(card);
+      });
+
+      board.appendChild(colEl);
+    });
+  }
+
+  renderCatBar();
+  load();
+});
+</script>
+</body>
+</html>
