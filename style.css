@@ -427,6 +427,37 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
 }
 .fsec-add-btn:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
 
+/* ===== Folder detail view ===== */
+.fd-view { display: flex; flex-direction: column; gap: 0; }
+.fd-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; margin-bottom: 12px;
+}
+.fd-name {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 22px; font-weight: 600; font-family: 'Fraunces', serif;
+  color: var(--text);
+}
+.fd-name .nav-icon { width: 20px; height: 20px; opacity: 0.7; }
+.fd-right { display: flex; align-items: center; gap: 8px; }
+.fd-stats { font-size: 13px; color: var(--muted); }
+.fd-prog-wrap {
+  height: 6px; background: var(--surface-3); border-radius: 99px;
+  overflow: hidden; margin-bottom: 20px;
+}
+.fd-sort-bar {
+  display: flex; gap: 6px; margin-bottom: 16px;
+}
+.fd-sort-btn {
+  padding: 6px 14px; font-size: 13px; font-weight: 500;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s var(--ease);
+}
+.fd-sort-btn:hover { color: var(--text); border-color: var(--muted); }
+.fd-sort-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
+.fd-task-list { list-style: none; padding: 0; margin: 0; }
+
 .page-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin-top: 28px; padding: 15px 20px;

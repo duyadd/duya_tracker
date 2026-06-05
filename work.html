@@ -31,8 +31,10 @@ requireAuth('work', (user) => {
   const CATEGORY = 'work';
   const sectionsEl = document.getElementById('sections');
   const emptyEl    = document.getElementById('empty');
+  const newFolderBtn = document.getElementById('new-folder-btn');
+  let sortBy = 'priority';
 
-  document.getElementById('new-folder-btn').onclick = async () => {
+  newFolderBtn.onclick = async () => {
     const name = prompt('Folder name:');
     if (!name || !name.trim()) return;
     await db.from('folders').insert([{ name: name.trim(), category: CATEGORY }]);
@@ -48,7 +50,6 @@ requireAuth('work', (user) => {
     const [{ data: folderData }, { data: taskData }] = await Promise.all([
       folderQuery,
       db.from('todos').select('*').eq('category', CATEGORY).eq('is_deleted', false)
-        .order('priority', { ascending: false }).order('id', { ascending: true })
     ]);
     render(folderData || [], taskData || [], !!filterFolder);
     if (typeof renderNavFolders === 'function') renderNavFolders('work');
@@ -56,6 +57,17 @@ requireAuth('work', (user) => {
 
   function render(folders, allTasks, isFiltered) {
     sectionsEl.innerHTML = '';
+    emptyEl.classList.add('hidden');
+
+    if (isFiltered && folders.length === 1) {
+      sectionsEl.className = 'fd-view';
+      newFolderBtn.classList.add('hidden');
+      renderFolderDetail(folders[0], allTasks);
+      return;
+    }
+
+    sectionsEl.className = 'fsec-row';
+    newFolderBtn.classList.remove('hidden');
     let hasContent = false;
 
     folders.forEach(folder => {
@@ -66,17 +78,120 @@ requireAuth('work', (user) => {
       hasContent = true;
     });
 
-    if (!isFiltered) {
-      const loose = allTasks.filter(t => !t.folder_id);
-      if (loose.length > 0) {
-        const looseActive = loose.filter(t => !t.is_completed);
-        const looseDone   = loose.filter(t => t.is_completed).length;
-        sectionsEl.appendChild(buildSection(null, looseActive, looseDone, loose.length));
-        hasContent = true;
-      }
+    const loose = allTasks.filter(t => !t.folder_id);
+    if (loose.length > 0) {
+      const looseActive = loose.filter(t => !t.is_completed);
+      const looseDone   = loose.filter(t => t.is_completed).length;
+      sectionsEl.appendChild(buildSection(null, looseActive, looseDone, loose.length));
+      hasContent = true;
     }
 
     emptyEl.classList.toggle('hidden', hasContent || folders.length > 0);
+  }
+
+  function renderFolderDetail(folder, allTasks) {
+    const tasks = allTasks.filter(t => String(t.folder_id) === String(folder.id));
+    const doneCount = tasks.filter(t => t.is_completed).length;
+    const totalCount = tasks.length;
+    const pct = totalCount > 0 ? Math.round(doneCount / totalCount * 100) : 0;
+
+    // Header
+    const head = document.createElement('div');
+    head.className = 'fd-head';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'fd-name';
+    nameEl.innerHTML = `<span class="nav-icon">${IC.fold}</span>${folder.name}`;
+
+    const right = document.createElement('div');
+    right.className = 'fd-right';
+
+    const statsEl = document.createElement('span');
+    statsEl.className = 'fd-stats';
+    statsEl.innerText = totalCount > 0 ? `${doneCount} / ${totalCount} done · ${pct}%` : 'No tasks yet';
+    right.appendChild(statsEl);
+
+    const renameBtn = document.createElement('button');
+    renameBtn.className = 'fsec-rename';
+    renameBtn.title = 'Rename folder';
+    renameBtn.innerHTML = IC.pencil;
+    renameBtn.onclick = async () => {
+      const name = prompt('Rename folder:', folder.name);
+      if (!name || !name.trim() || name.trim() === folder.name) return;
+      await db.from('folders').update({ name: name.trim() }).eq('id', folder.id);
+      load();
+    };
+    right.appendChild(renameBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'fsec-del';
+    delBtn.title = 'Delete folder';
+    delBtn.innerHTML = IC.trash;
+    delBtn.onclick = async () => {
+      if (!confirm(`Delete folder "${folder.name}"? Tasks will become unassigned.`)) return;
+      await db.from('folders').delete().eq('id', folder.id);
+      window.location.href = 'work.html';
+    };
+    right.appendChild(delBtn);
+
+    head.append(nameEl, right);
+    sectionsEl.appendChild(head);
+
+    // Progress bar
+    const progWrap = document.createElement('div');
+    progWrap.className = 'fd-prog-wrap';
+    const progFill = document.createElement('div');
+    progFill.className = 'fsec-prog-fill work';
+    progFill.style.width = pct + '%';
+    progWrap.appendChild(progFill);
+    sectionsEl.appendChild(progWrap);
+
+    // Sort bar
+    const sortBar = document.createElement('div');
+    sortBar.className = 'fd-sort-bar';
+    [['priority', 'Priority'], ['due', 'Due date']].forEach(([key, label]) => {
+      const btn = document.createElement('button');
+      btn.className = 'fd-sort-btn' + (sortBy === key ? ' active' : '');
+      btn.innerText = label;
+      btn.onclick = () => { sortBy = key; load(); };
+      sortBar.appendChild(btn);
+    });
+    sectionsEl.appendChild(sortBar);
+
+    // Sort tasks
+    let sorted = [...tasks];
+    if (sortBy === 'due') {
+      sorted.sort((a, b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+    } else {
+      sorted.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    }
+    const active = sorted.filter(t => !t.is_completed);
+    const done   = sorted.filter(t => t.is_completed);
+
+    if (tasks.length === 0) {
+      const msg = document.createElement('div');
+      msg.className = 'fsec-empty';
+      msg.style.padding = '40px 0';
+      msg.innerText = 'No tasks in this folder yet';
+      sectionsEl.appendChild(msg);
+    } else {
+      const ul = document.createElement('ul');
+      ul.className = 'fd-task-list';
+      [...active, ...done].forEach(t => ul.appendChild(buildTaskLi(t, load, { hideCatTag: true })));
+      sectionsEl.appendChild(ul);
+    }
+
+    const addLink = document.createElement('a');
+    addLink.className = 'fsec-add-btn';
+    addLink.style.marginTop = '12px';
+    addLink.href = `add.html?cat=${CATEGORY}&folder=${folder.id}`;
+    addLink.innerText = '+ Add task';
+    sectionsEl.appendChild(addLink);
   }
 
   function buildSection(folder, activeTasks, doneCount, totalCount) {
@@ -85,7 +200,6 @@ requireAuth('work', (user) => {
     const sec = document.createElement('div');
     sec.className = 'fsec';
 
-    // Header
     const head = document.createElement('div');
     head.className = 'fsec-head';
 
@@ -129,7 +243,6 @@ requireAuth('work', (user) => {
     head.append(nameEl, right);
     sec.appendChild(head);
 
-    // Progress bar
     const progWrap = document.createElement('div');
     progWrap.className = 'fsec-prog-wrap';
     const progFill = document.createElement('div');
@@ -138,7 +251,6 @@ requireAuth('work', (user) => {
     progWrap.appendChild(progFill);
     sec.appendChild(progWrap);
 
-    // Task list
     if (activeTasks.length === 0) {
       const msg = document.createElement('div');
       msg.className = pct === 100 && totalCount > 0 ? 'fsec-all-done' : 'fsec-empty';
@@ -151,7 +263,6 @@ requireAuth('work', (user) => {
       sec.appendChild(ul);
     }
 
-    // Per-folder add button
     const addLink = document.createElement('a');
     addLink.className = 'fsec-add-btn';
     addLink.href = 'add.html?cat=' + CATEGORY + (folder ? '&folder=' + folder.id : '');
