@@ -51,6 +51,21 @@
     var(--bg);
 }
 :root[data-theme="light"] .nav { background: rgba(255,255,255,0.85); }
+
+/* Гэрэлтэй сэдэвт товчийг тод болгох */
+:root[data-theme="light"] .btn-primary,
+:root[data-theme="light"] .add-card button {
+  background: linear-gradient(180deg, #e0920a, #c47f08);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(224,146,10,0.28);
+}
+:root[data-theme="light"] .btn-save { color: #ffffff; }
+:root[data-theme="light"] .folder-chip.active,
+:root[data-theme="light"] .view-toggle button.active {
+  color: #ffffff;
+}
+:root[data-theme="light"] .card .num,
+:root[data-theme="light"] .agenda-time { color: var(--accent); }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
