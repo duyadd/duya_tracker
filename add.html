@@ -26,8 +26,8 @@
 
     <label>Category</label>
     <div class="btn-group" id="f-category" data-value="personal">
-      <button type="button" class="btn-opt active" data-val="personal">👤 Personal</button>
-      <button type="button" class="btn-opt" data-val="work">💼 Work</button>
+      <button type="button" class="btn-opt active" data-val="personal">Personal</button>
+      <button type="button" class="btn-opt" data-val="work">Work</button>
     </div>
 
     <div class="form-row-2">
@@ -44,7 +44,7 @@
     <label>Type</label>
     <div class="btn-group" id="f-kind" data-value="task">
       <button type="button" class="btn-opt active" data-val="task">Task</button>
-      <button type="button" class="btn-opt" data-val="meeting">Meeting 👥</button>
+      <button type="button" class="btn-opt" data-val="meeting">Meeting</button>
     </div>
 
     <label>Priority</label>
@@ -97,10 +97,13 @@ requireAuth('add', (user) => {
   let recentIds = [];
 
   attachDatePicker(fDate, false);
-  const _prefillDate = new URLSearchParams(window.location.search).get('date');
+  const _qs = new URLSearchParams(window.location.search);
+  const _prefillDate = _qs.get('date');
   if (_prefillDate) {
     if (fDate._flatpickr) fDate._flatpickr.setDate(_prefillDate); else fDate.value = _prefillDate;
   }
+  const _prefillCat = _qs.get('cat');
+  if (_prefillCat === 'personal' || _prefillCat === 'work') resetBtnGroup('f-category', _prefillCat);
 
   function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
 

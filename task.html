@@ -16,7 +16,7 @@
     <button class="detail-back-btn" id="back-btn">← Back</button>
     <div class="detail-header-actions">
       <button id="complete-btn"></button>
-      <button class="detail-trash-btn" id="trash-btn">🗑 Trash</button>
+      <button class="detail-trash-btn" id="trash-btn">Trash</button>
     </div>
   </div>
   <div id="task-card"></div>
@@ -42,6 +42,7 @@ requireAuth('task', async (user) => {
   const completeBtn = document.getElementById('complete-btn');
   const trashBtn    = document.getElementById('trash-btn');
   const backBtn     = document.getElementById('back-btn');
+  trashBtn.innerHTML = IC.trash + ' Trash';
 
   backBtn.onclick  = () => { history.length > 1 ? history.back() : window.location.href = 'index.html'; };
   trashBtn.onclick = async () => {
@@ -92,7 +93,7 @@ requireAuth('task', async (user) => {
     // Title
     const titleEl = document.createElement('h2');
     titleEl.className = 'detail-title' + (task.is_completed ? ' completed' : '');
-    titleEl.innerText = (task.kind === 'meeting' ? '👥 ' : '') + task.title;
+    titleEl.innerText = task.title;
     card.appendChild(titleEl);
 
     // Description
@@ -108,21 +109,21 @@ requireAuth('task', async (user) => {
     if (task.due_date) {
       let ds = formatDate(task.due_date);
       if (task.due_time) ds += '  ·  ' + formatTime(task.due_time);
-      rows.push(['📅 Date', ds]);
+      rows.push([IC.cal + ' Date', ds]);
     }
-    if (task.assignee)   rows.push(['👤 Assigned to', task.assignee]);
+    if (task.assignee)   rows.push([IC.user + ' Assigned to', task.assignee]);
     if (task.folder_id) {
       const fn = getFolderName(task.folder_id);
-      if (fn) rows.push(['📁 Folder', fn]);
+      if (fn) rows.push([IC.fold + ' Folder', fn]);
     }
-    rows.push(['Type', task.kind === 'meeting' ? 'Meeting 👥' : 'Task']);
+    rows.push(['Type', task.kind === 'meeting' ? 'Meeting' : 'Task']);
 
     const fieldsList = document.createElement('div');
     fieldsList.className = 'detail-fields';
     rows.forEach(([lbl, val]) => {
       const row = document.createElement('div');
       row.className = 'detail-field-row';
-      const l = document.createElement('span'); l.className = 'detail-field-label'; l.innerText = lbl;
+      const l = document.createElement('span'); l.className = 'detail-field-label'; l.innerHTML = lbl;
       const v = document.createElement('span'); v.className = 'detail-field-value'; v.innerText = val;
       row.append(l, v);
       fieldsList.appendChild(row);
@@ -180,7 +181,7 @@ requireAuth('task', async (user) => {
 
     // Category
     addLbl('Category');
-    card.appendChild(makeBtnGroup('ed-cat', [['personal','👤 Personal'],['work','💼 Work']], task.category || 'personal'));
+    card.appendChild(makeBtnGroup('ed-cat', [['personal','Personal'],['work','Work']], task.category || 'personal'));
 
     // Folder + Assignee
     const r1 = document.createElement('div'); r1.className = 'form-row-2';
@@ -209,7 +210,7 @@ requireAuth('task', async (user) => {
 
     // Type
     addLbl('Type');
-    card.appendChild(makeBtnGroup('ed-kind', [['task','Task'],['meeting','Meeting 👥']], task.kind || 'task'));
+    card.appendChild(makeBtnGroup('ed-kind', [['task','Task'],['meeting','Meeting']], task.kind || 'task'));
 
     // Priority
     addLbl('Priority');
