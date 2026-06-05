@@ -62,8 +62,11 @@ async function renderNav(active) {
       <a href="index.html" data-page="home"><span class="nav-icon">${IC.home}</span>Home</a>
       <a href="search.html" data-page="search"><span class="nav-icon">${IC.search}</span>Search</a>
       <a href="add.html" data-page="add"><span class="nav-icon">${IC.add}</span>Add Task</a>
-      <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
-      <a href="work.html" data-page="work"><span class="nav-icon">${IC.work}</span>Work</a>
+      <span class="nav-section-label">Tasks</span>
+      <div class="nav-sub-group">
+        <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
+        <a href="work.html" data-page="work"><span class="nav-icon">${IC.work}</span>Work</a>
+      </div>
       <a href="calendar.html" data-page="calendar"><span class="nav-icon">${IC.cal}</span>Schedule</a>
       <a href="done.html" data-page="done"><span class="nav-icon">${IC.done}</span>Done</a>
       <a href="trash.html" data-page="trash"><span class="nav-icon">${IC.trash}</span>Trash</a>
