@@ -223,7 +223,7 @@ requireAuth('personal', (user) => {
       COLS.forEach(col => {
         const colTasks = sortTasks(tasks.filter(t => {
           const st = t.status || (t.is_completed ? 'done' : 'todo');
-          return st === col.key && inPeriod(t);
+          return st === col.key && (col.key !== 'done' || inPeriod(t));
         }));
 
         const colEl = document.createElement('div');
