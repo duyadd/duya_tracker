@@ -22,36 +22,39 @@
     <input type="text" id="f-title" placeholder="What needs doing?">
 
     <label>Description</label>
-    <textarea id="f-desc" rows="3" placeholder="Detailed description (optional)"
-      style="resize:vertical;"></textarea>
+    <textarea id="f-desc" rows="3" placeholder="Detailed description (optional)"></textarea>
 
-    <div class="form-grid">
-      <div>
-        <label>Category</label>
-        <select id="f-category">
-          <option value="personal">👤 Personal</option>
-          <option value="work">💼 Work</option>
-        </select>
-      </div>
+    <label>Category</label>
+    <div class="btn-group" id="f-category" data-value="personal">
+      <button type="button" class="btn-opt active" data-val="personal">👤 Personal</button>
+      <button type="button" class="btn-opt" data-val="work">💼 Work</button>
+    </div>
+
+    <div class="form-row-2">
       <div>
         <label>Folder</label>
         <select id="f-folder"><option value="">— No folder —</option></select>
       </div>
       <div>
-        <label>Type</label>
-        <select id="f-kind">
-          <option value="task">Task</option>
-          <option value="meeting">Meeting 👥</option>
-        </select>
+        <label>Assigned to</label>
+        <input type="text" id="f-assignee" placeholder="Name (optional)">
       </div>
-      <div>
-        <label>Priority</label>
-        <select id="f-priority">
-          <option value="0">Normal</option>
-          <option value="1">Medium ⚑</option>
-          <option value="2">High ⚑</option>
-        </select>
-      </div>
+    </div>
+
+    <label>Type</label>
+    <div class="btn-group" id="f-kind" data-value="task">
+      <button type="button" class="btn-opt active" data-val="task">Task</button>
+      <button type="button" class="btn-opt" data-val="meeting">Meeting 👥</button>
+    </div>
+
+    <label>Priority</label>
+    <div class="btn-group" id="f-priority" data-value="0">
+      <button type="button" class="btn-opt active" data-val="0">Normal</button>
+      <button type="button" class="btn-opt" data-val="1">Medium ⚑</button>
+      <button type="button" class="btn-opt" data-val="2">High ⚑</button>
+    </div>
+
+    <div class="form-row-2">
       <div>
         <label>Date</label>
         <input type="text" id="f-date" placeholder="Pick a date">
@@ -60,18 +63,13 @@
         <label>Time</label>
         <input type="time" id="f-time">
       </div>
-      <div>
-        <label>Status</label>
-        <select id="f-status">
-          <option value="todo">Not started</option>
-          <option value="doing">In progress</option>
-          <option value="done">Done</option>
-        </select>
-      </div>
-      <div>
-        <label>Assigned to</label>
-        <input type="text" id="f-assignee" placeholder="Name (optional)">
-      </div>
+    </div>
+
+    <label>Status</label>
+    <div class="btn-group" id="f-status" data-value="todo">
+      <button type="button" class="btn-opt active" data-val="todo">○ Not started</button>
+      <button type="button" class="btn-opt" data-val="doing">◐ In progress</button>
+      <button type="button" class="btn-opt" data-val="done">● Done</button>
     </div>
 
     <button class="btn-primary" id="f-add">Add task</button>
@@ -85,36 +83,55 @@
 <script src="app.js"></script>
 <script>
 requireAuth('add', (user) => {
-  const fTitle = document.getElementById('f-title');
-  const fDesc = document.getElementById('f-desc');
-  const fCategory = document.getElementById('f-category');
-  const fFolder = document.getElementById('f-folder');
-  const fKind = document.getElementById('f-kind');
-  const fPriority = document.getElementById('f-priority');
-  const fDate = document.getElementById('f-date');
-  const fTime = document.getElementById('f-time');
-  const fStatus = document.getElementById('f-status');
+  const fTitle    = document.getElementById('f-title');
+  const fDesc     = document.getElementById('f-desc');
+  const fFolder   = document.getElementById('f-folder');
+  const fDate     = document.getElementById('f-date');
+  const fTime     = document.getElementById('f-time');
   const fAssignee = document.getElementById('f-assignee');
-  const msg = document.getElementById('msg');
-  const recentList = document.getElementById('recent-list');
+  const msg         = document.getElementById('msg');
+  const recentList  = document.getElementById('recent-list');
   const recentEmpty = document.getElementById('recent-empty');
 
-  let folders = [];
+  let folders   = [];
   let recentIds = [];
 
-  // Гоё календарь
   attachDatePicker(fDate, false);
 
   function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
 
-  // Ангилал солиход тухайн ангиллын фолдеруудыг харуулах
+  function getBtnGroupVal(id) {
+    return document.getElementById(id).dataset.value;
+  }
+  function resetBtnGroup(id, val) {
+    const grp = document.getElementById(id);
+    grp.dataset.value = val;
+    grp.querySelectorAll('.btn-opt').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+  }
+  function initBtnGroup(id, onChange) {
+    const grp = document.getElementById(id);
+    grp.querySelectorAll('.btn-opt').forEach(btn => {
+      btn.onclick = () => {
+        grp.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        grp.dataset.value = btn.dataset.val;
+        if (onChange) onChange();
+      };
+    });
+  }
+
+  initBtnGroup('f-category', renderFolderOptions);
+  initBtnGroup('f-kind');
+  initBtnGroup('f-priority');
+  initBtnGroup('f-status');
+
   async function loadFolders() {
     const { data } = await db.from('folders').select('*').order('id', { ascending: true });
     folders = data || [];
     renderFolderOptions();
   }
   function renderFolderOptions() {
-    const cat = fCategory.value;
+    const cat = getBtnGroupVal('f-category');
     const relevant = folders.filter(f => (f.category || 'work') === cat);
     fFolder.innerHTML = '<option value="">— No folder —</option>';
     relevant.forEach(f => {
@@ -123,24 +140,22 @@ requireAuth('add', (user) => {
       fFolder.appendChild(o);
     });
   }
-  fCategory.onchange = renderFolderOptions;
 
-  // ----- Нэмэх -----
   document.getElementById('f-add').onclick = async () => {
     const title = fTitle.value.trim();
     if (!title) { showMsg('Please enter a title.', 'error'); fTitle.focus(); return; }
-    const st = fStatus.value;
+    const st = getBtnGroupVal('f-status');
     const { data, error } = await db.from('todos').insert([{
       title,
-      description: fDesc.value.trim() || null,
-      category: fCategory.value,
-      folder_id: fFolder.value || null,
-      kind: fKind.value,
-      priority: parseInt(fPriority.value, 10),
-      due_date: fDate.value || null,
-      due_time: fTime.value || null,
-      assignee: fAssignee.value.trim() || null,
-      status: st,
+      description:  fDesc.value.trim() || null,
+      category:     getBtnGroupVal('f-category'),
+      folder_id:    fFolder.value || null,
+      kind:         getBtnGroupVal('f-kind'),
+      priority:     parseInt(getBtnGroupVal('f-priority'), 10),
+      due_date:     fDate.value || null,
+      due_time:     fTime.value || null,
+      assignee:     fAssignee.value.trim() || null,
+      status:       st,
       is_completed: st === 'done'
     }]).select();
 
@@ -148,25 +163,23 @@ requireAuth('add', (user) => {
 
     showMsg('✓ "' + title + '" added.', 'info');
     if (data && data[0]) recentIds.unshift(data[0].id);
-    // Формыг цэвэрлэх (ангилал, фолдер хэвээр үлдээж дараалан нэмэхэд хялбар)
-    fTitle.value = ''; fDesc.value = ''; fTime.value = '';
-    fPriority.value = '0'; fKind.value = 'task'; fStatus.value = 'todo'; fAssignee.value = '';
+    fTitle.value = ''; fDesc.value = ''; fTime.value = ''; fAssignee.value = '';
+    resetBtnGroup('f-priority', '0');
+    resetBtnGroup('f-kind', 'task');
+    resetBtnGroup('f-status', 'todo');
     if (fDate._flatpickr) fDate._flatpickr.clear(); else fDate.value = '';
     fTitle.focus();
     loadRecent();
   };
   fTitle.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('f-add').click(); });
 
-  // ----- Саяхан нэмсэн -----
   async function loadRecent() {
     if (recentIds.length === 0) {
-      // Энэ сессэд нэмээгүй бол датабэйсээс хамгийн сүүлийн 5-ыг
       const { data } = await db.from('todos').select('*').order('id', { ascending: false }).limit(5);
       renderRecent(data || []);
       return;
     }
     const { data } = await db.from('todos').select('*').in('id', recentIds.slice(0, 10));
-    // recentIds-ийн дарааллаар эрэмбэлэх
     const ordered = recentIds.slice(0,10).map(id => (data||[]).find(t => t.id === id)).filter(Boolean);
     renderRecent(ordered);
   }
