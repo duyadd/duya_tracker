@@ -108,14 +108,15 @@ async function renderNavFolders(active) {
   ['personal', 'work'].forEach(cat => {
     const container = document.getElementById('sub-' + cat);
     if (!container) return;
-    const catFolders = folders.filter(f => (f.category || 'work') === cat);
     container.innerHTML = '';
+    if (active !== cat) return;
+    const catFolders = folders.filter(f => (f.category || 'work') === cat);
     catFolders.forEach(f => {
       const a = document.createElement('a');
       a.className = 'nav-folder';
       a.href = cat + '.html?folder=' + f.id;
       a.innerHTML = `<span class="nav-icon">${IC.fold}</span>${f.name}`;
-      if (active === cat && String(activeFolder) === String(f.id)) a.classList.add('active');
+      if (String(activeFolder) === String(f.id)) a.classList.add('active');
       container.appendChild(a);
     });
   });
