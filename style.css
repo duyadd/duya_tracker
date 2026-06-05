@@ -23,6 +23,34 @@
   --shadow: 0 8px 28px rgba(0,0,0,0.4);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* ===== Гэрэлтэй сэдэв ===== */
+:root[data-theme="light"] {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-2: #f7f8fa;
+  --surface-3: #eceef1;
+  --border: #dfe2e8;
+  --border-soft: #e8eaee;
+  --text: #1b1e24;
+  --muted: #6b7280;
+  --muted-2: #9aa1ac;
+  --accent: #e0920a;
+  --accent-dim: #c47f08;
+  --accent-glow: rgba(224,146,10,0.18);
+  --danger: #d6485a;
+  --personal: #3b82c4;
+  --work: #e0920a;
+  --done: #3fa852;
+  --shadow: 0 6px 22px rgba(20,25,40,0.1);
+}
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(900px circle at 12% -5%, #eef1f6 0%, transparent 55%),
+    radial-gradient(700px circle at 95% 0%, #f0f2f7 0%, transparent 50%),
+    var(--bg);
+}
+:root[data-theme="light"] .nav { background: rgba(255,255,255,0.85); }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -92,6 +120,7 @@ body {
 }
 .nav button:hover { color: var(--text); background: var(--surface-3); }
 .nav button:active { transform: scale(0.96); }
+.nav .theme-btn { padding: 7px 11px; font-size: 15px; line-height: 1; }
 
 .wrap { max-width: 780px; margin: 0 auto; padding: 32px 18px; animation: fadeUp 0.5s var(--ease); }
 

@@ -4,6 +4,27 @@ const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// ===== Сэдэв (dark/light) =====
+function applyTheme(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+}
+function getTheme() {
+  try { return localStorage.getItem('theme') || 'dark'; } catch (e) { return 'dark'; }
+}
+function toggleTheme() {
+  const next = getTheme() === 'light' ? 'dark' : 'light';
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  applyTheme(next);
+  updateThemeBtn();
+}
+function updateThemeBtn() {
+  const btn = document.getElementById('theme-btn');
+  if (btn) btn.innerText = getTheme() === 'light' ? '🌙' : '☀️';
+}
+// Хуудас ачаалагдмагц шууд хэрэглэх (анивчихаас сэргийлж эртхэн)
+applyTheme(getTheme());
+
 // ===== Навигаци зурах =====
 function renderNav(active) {
   const nav = document.createElement('div');
@@ -17,12 +38,15 @@ function renderNav(active) {
     <a href="done.html" data-page="done">Дууссан</a>
     <span class="spacer"></span>
     <span class="user" id="nav-user"></span>
+    <button class="theme-btn" id="theme-btn" title="Сэдэв солих">☀️</button>
     <button id="nav-logout">Гарах</button>
   `;
   document.body.prepend(nav);
   const link = nav.querySelector(`a[data-page="${active}"]`);
   if (link) link.classList.add('active');
   nav.querySelector('#nav-logout').addEventListener('click', () => db.auth.signOut());
+  nav.querySelector('#theme-btn').addEventListener('click', toggleTheme);
+  updateThemeBtn();
 }
 
 // ===== Нэвтрэлт шалгах. Нэвтрээгүй бол auth дэлгэц рүү шилжүүлнэ =====
