@@ -164,8 +164,6 @@ requireAuth('work', (user) => {
       { key: 'doing', label: 'In progress' },
       { key: 'done',  label: 'Done' }
     ];
-    const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
-
     function sortTasks(arr) {
       if (sortBy === 'due') {
         return [...arr].sort((a, b) => {
@@ -234,18 +232,12 @@ requireAuth('work', (user) => {
             meta.appendChild(d);
           }
 
-          const advBtn = document.createElement('button');
-          advBtn.className = 'bc-advance';
-          advBtn.innerText = '→ ' + COLS.find(c => c.key === NEXT[col.key]).label;
-          advBtn.onclick = async (e) => {
-            e.stopPropagation();
-            const next = NEXT[col.key];
-            await db.from('todos').update({ status: next, is_completed: next === 'done' }).eq('id', t.id);
-            load();
+          const sel = buildStatusSelect(t, load);
+          card.append(title, meta, sel);
+          card.onclick = (e) => {
+            if (e.target.closest('.status-select')) return;
+            window.location.href = 'task.html?id=' + t.id;
           };
-
-          card.append(title, meta, advBtn);
-          card.onclick = () => { window.location.href = 'task.html?id=' + t.id; };
           colEl.appendChild(card);
         });
 
