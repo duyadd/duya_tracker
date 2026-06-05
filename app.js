@@ -62,11 +62,10 @@ async function renderNav(active) {
       <a href="index.html" data-page="home"><span class="nav-icon">${IC.home}</span>Home</a>
       <a href="search.html" data-page="search"><span class="nav-icon">${IC.search}</span>Search</a>
       <a href="add.html" data-page="add"><span class="nav-icon">${IC.add}</span>Add Task</a>
-      <span class="nav-section-label">Tasks</span>
-      <div class="nav-sub-group">
-        <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
-        <a href="work.html" data-page="work"><span class="nav-icon">${IC.work}</span>Work</a>
-      </div>
+      <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
+      <div class="nav-sub" id="sub-personal"></div>
+      <a href="work.html" data-page="work"><span class="nav-icon">${IC.work}</span>Work</a>
+      <div class="nav-sub" id="sub-work"></div>
       <a href="calendar.html" data-page="calendar"><span class="nav-icon">${IC.cal}</span>Schedule</a>
       <a href="done.html" data-page="done"><span class="nav-icon">${IC.done}</span>Done</a>
       <a href="trash.html" data-page="trash"><span class="nav-icon">${IC.trash}</span>Trash</a>
@@ -100,7 +99,27 @@ async function renderNav(active) {
   await renderNavFolders(active);
 }
 
-function renderNavFolders() {}
+async function renderNavFolders(active) {
+  const { data } = await db.from('folders').select('*').order('id', { ascending: true });
+  const folders = data || [];
+  const params = new URLSearchParams(window.location.search);
+  const activeFolder = params.get('folder');
+
+  ['personal', 'work'].forEach(cat => {
+    const container = document.getElementById('sub-' + cat);
+    if (!container) return;
+    const catFolders = folders.filter(f => (f.category || 'work') === cat);
+    container.innerHTML = '';
+    catFolders.forEach(f => {
+      const a = document.createElement('a');
+      a.className = 'nav-folder';
+      a.href = cat + '.html?folder=' + f.id;
+      a.innerHTML = `<span class="nav-icon">${IC.fold}</span>${f.name}`;
+      if (active === cat && String(activeFolder) === String(f.id)) a.classList.add('active');
+      container.appendChild(a);
+    });
+  });
+}
 
 // ===== Нэвтрэлт шалгах. Нэвтрээгүй бол auth дэлгэц рүү шилжүүлнэ =====
 // onReady(user) — нэвтэрсэн үед дуудагдана.
