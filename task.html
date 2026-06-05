@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Task — Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="detail-back-row">
+    <button class="detail-back-btn" id="back-btn">← Back</button>
+    <div class="detail-header-actions">
+      <button id="complete-btn"></button>
+      <button class="detail-trash-btn" id="trash-btn">🗑 Trash</button>
+    </div>
+  </div>
+  <div id="task-card"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('task', async (user) => {
+  const params = new URLSearchParams(window.location.search);
+  const taskId  = params.get('id');
+  if (!taskId) { window.location.href = 'index.html'; return; }
+
+  const [{ data }, { data: folderData }] = await Promise.all([
+    db.from('todos').select('*').eq('id', taskId).single(),
+    db.from('folders').select('*').order('id', { ascending: true })
+  ]);
+  if (!data) { window.location.href = 'index.html'; return; }
+
+  let task    = data;
+  const folders = folderData || [];
+
+  const card        = document.getElementById('task-card');
+  const completeBtn = document.getElementById('complete-btn');
+  const trashBtn    = document.getElementById('trash-btn');
+  const backBtn     = document.getElementById('back-btn');
+
+  backBtn.onclick  = () => { history.length > 1 ? history.back() : window.location.href = 'index.html'; };
+  trashBtn.onclick = async () => {
+    if (!confirm('Move "' + task.title + '" to trash?')) return;
+    await db.from('todos').update({ is_deleted: true }).eq('id', task.id);
+    history.length > 1 ? history.back() : window.location.href = 'index.html';
+  };
+
+  function updateCompleteBtn() {
+    completeBtn.innerText   = task.is_completed ? '↩ Reopen' : '✓ Complete';
+    completeBtn.className   = task.is_completed ? 'detail-reopen-btn' : 'detail-complete-btn';
+  }
+  completeBtn.onclick = async () => {
+    const nowDone = !task.is_completed;
+    await db.from('todos').update({ is_completed: nowDone, status: nowDone ? 'done' : 'todo' }).eq('id', task.id);
+    task.is_completed = nowDone;
+    task.status = nowDone ? 'done' : 'todo';
+    updateCompleteBtn();
+    renderView();
+  };
+
+  function getFolderName(fid) {
+    const f = folders.find(f => String(f.id) === String(fid));
+    return f ? f.name : null;
+  }
+
+  /* ===== VIEW ===== */
+  function renderView() {
+    card.className = 'detail-card';
+    card.innerHTML = '';
+
+    // Status + badges row
+    const topRow = document.createElement('div');
+    topRow.className = 'detail-top-row';
+    topRow.appendChild(buildStatusSelect(task, updateCompleteBtn));
+    const catTag = document.createElement('span');
+    catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
+    catTag.innerText = task.category === 'work' ? 'Work' : 'Personal';
+    topRow.appendChild(catTag);
+    if (task.priority > 0) {
+      const pTag = document.createElement('span');
+      pTag.className = 'tag prio-' + task.priority;
+      pTag.innerText = '⚑ ' + PRIORITY_LABELS[task.priority];
+      topRow.appendChild(pTag);
+    }
+    card.appendChild(topRow);
+
+    // Title
+    const titleEl = document.createElement('h2');
+    titleEl.className = 'detail-title' + (task.is_completed ? ' completed' : '');
+    titleEl.innerText = (task.kind === 'meeting' ? '👥 ' : '') + task.title;
+    card.appendChild(titleEl);
+
+    // Description
+    if (task.description) {
+      const descEl = document.createElement('div');
+      descEl.className = 'detail-desc';
+      descEl.innerText = task.description;
+      card.appendChild(descEl);
+    }
+
+    // Fields
+    const rows = [];
+    if (task.due_date) {
+      let ds = formatDate(task.due_date);
+      if (task.due_time) ds += '  ·  ' + formatTime(task.due_time);
+      rows.push(['📅 Date', ds]);
+    }
+    if (task.assignee)   rows.push(['👤 Assigned to', task.assignee]);
+    if (task.folder_id) {
+      const fn = getFolderName(task.folder_id);
+      if (fn) rows.push(['📁 Folder', fn]);
+    }
+    rows.push(['Type', task.kind === 'meeting' ? 'Meeting 👥' : 'Task']);
+
+    const fieldsList = document.createElement('div');
+    fieldsList.className = 'detail-fields';
+    rows.forEach(([lbl, val]) => {
+      const row = document.createElement('div');
+      row.className = 'detail-field-row';
+      const l = document.createElement('span'); l.className = 'detail-field-label'; l.innerText = lbl;
+      const v = document.createElement('span'); v.className = 'detail-field-value'; v.innerText = val;
+      row.append(l, v);
+      fieldsList.appendChild(row);
+    });
+    card.appendChild(fieldsList);
+
+    // Edit button
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn-primary';
+    editBtn.innerText  = 'Edit task';
+    editBtn.style.marginTop = '24px';
+    editBtn.onclick = renderEdit;
+    card.appendChild(editBtn);
+  }
+
+  /* ===== EDIT ===== */
+  function renderEdit() {
+    card.className = 'detail-card add-card';
+    card.innerHTML = '';
+
+    function addLbl(text) {
+      const l = document.createElement('label'); l.innerText = text; card.appendChild(l);
+    }
+    function makeBtnGroup(gid, options, cur) {
+      const grp = document.createElement('div');
+      grp.className = 'btn-group'; grp.id = gid; grp.dataset.value = String(cur);
+      options.forEach(([val, label]) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-opt' + (String(val) === String(cur) ? ' active' : '');
+        btn.dataset.val = String(val); btn.innerText = label;
+        btn.onclick = () => {
+          grp.querySelectorAll('.btn-opt').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active'); grp.dataset.value = String(val);
+          if (gid === 'ed-cat') refreshFolders();
+        };
+        grp.appendChild(btn);
+      });
+      return grp;
+    }
+    const getG = id => document.getElementById(id)?.dataset.value ?? '';
+
+    // Title
+    addLbl('Title *');
+    const titleIn = document.createElement('input');
+    titleIn.type = 'text'; titleIn.value = task.title;
+    card.appendChild(titleIn);
+
+    // Description
+    addLbl('Description');
+    const descIn = document.createElement('textarea');
+    descIn.rows = 3; descIn.value = task.description || '';
+    descIn.placeholder = 'Detailed description (optional)';
+    card.appendChild(descIn);
+
+    // Category
+    addLbl('Category');
+    card.appendChild(makeBtnGroup('ed-cat', [['personal','👤 Personal'],['work','💼 Work']], task.category || 'personal'));
+
+    // Folder + Assignee
+    const r1 = document.createElement('div'); r1.className = 'form-row-2';
+    const fDiv = document.createElement('div');
+    const fLbl = document.createElement('label'); fLbl.innerText = 'Folder';
+    const fSel = document.createElement('select'); fSel.id = 'ed-folder';
+    fDiv.append(fLbl, fSel);
+    const aDiv = document.createElement('div');
+    const aLbl = document.createElement('label'); aLbl.innerText = 'Assigned to';
+    const aIn  = document.createElement('input');
+    aIn.type = 'text'; aIn.value = task.assignee || ''; aIn.placeholder = 'Name (optional)';
+    aDiv.append(aLbl, aIn);
+    r1.append(fDiv, aDiv); card.appendChild(r1);
+
+    function refreshFolders() {
+      const cat = getG('ed-cat');
+      fSel.innerHTML = '<option value="">— No folder —</option>';
+      folders.filter(f => (f.category||'work') === cat).forEach(f => {
+        const o = document.createElement('option');
+        o.value = f.id; o.innerText = '📁 ' + f.name;
+        if (String(f.id) === String(task.folder_id)) o.selected = true;
+        fSel.appendChild(o);
+      });
+    }
+    refreshFolders();
+
+    // Type
+    addLbl('Type');
+    card.appendChild(makeBtnGroup('ed-kind', [['task','Task'],['meeting','Meeting 👥']], task.kind || 'task'));
+
+    // Priority
+    addLbl('Priority');
+    card.appendChild(makeBtnGroup('ed-prio', [['0','Normal'],['1','Medium ⚑'],['2','High ⚑']], String(task.priority||0)));
+
+    // Date + Time
+    const r2 = document.createElement('div'); r2.className = 'form-row-2';
+    const dDiv = document.createElement('div');
+    const dLbl = document.createElement('label'); dLbl.innerText = 'Date';
+    const dIn  = document.createElement('input');
+    dIn.type = 'text'; dIn.placeholder = 'Pick a date';
+    if (task.due_date) dIn.value = task.due_date;
+    dDiv.append(dLbl, dIn);
+    const tDiv = document.createElement('div');
+    const tLbl = document.createElement('label'); tLbl.innerText = 'Time';
+    const tIn  = document.createElement('input'); tIn.type = 'time';
+    if (task.due_time) tIn.value = formatTime(task.due_time);
+    tDiv.append(tLbl, tIn);
+    r2.append(dDiv, tDiv); card.appendChild(r2);
+    attachDatePicker(dIn, false);
+
+    // Status
+    addLbl('Status');
+    card.appendChild(makeBtnGroup('ed-status', [['todo','○ Not started'],['doing','◐ In progress'],['done','● Done']], task.status||(task.is_completed?'done':'todo')));
+
+    // Actions
+    const acts = document.createElement('div');
+    acts.style.cssText = 'display:flex;gap:10px;margin-top:4px;';
+    const saveBtn = document.createElement('button');
+    saveBtn.className = 'btn-primary'; saveBtn.style.flex = '1'; saveBtn.innerText = 'Save changes';
+    saveBtn.onclick = async () => {
+      const newTitle = titleIn.value.trim();
+      if (!newTitle) { titleIn.focus(); return; }
+      const st = getG('ed-status'), newCat = getG('ed-cat');
+      const catChanged = newCat !== task.category;
+      const upd = {
+        title: newTitle, description: descIn.value.trim() || null,
+        category: newCat, folder_id: catChanged ? null : (fSel.value || null),
+        kind: getG('ed-kind'), priority: parseInt(getG('ed-prio'), 10),
+        due_date: dIn.value || null, due_time: tIn.value || null,
+        assignee: aIn.value.trim() || null, status: st, is_completed: st === 'done'
+      };
+      await db.from('todos').update(upd).eq('id', task.id);
+      Object.assign(task, upd);
+      updateCompleteBtn(); renderView();
+    };
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'detail-cancel-btn'; cancelBtn.innerText = 'Cancel';
+    cancelBtn.onclick = renderView;
+    acts.append(saveBtn, cancelBtn);
+    card.appendChild(acts);
+  }
+
+  updateCompleteBtn();
+  renderView();
+});
+</script>
+</body>
+</html>

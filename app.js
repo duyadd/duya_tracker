@@ -206,6 +206,11 @@ function buildTaskLi(task, onChange) {
 
     const main = document.createElement('div');
     main.className = 'task-main';
+    main.style.cursor = 'pointer';
+    main.onclick = (e) => {
+      if (e.target.closest('.status-select')) return;
+      window.location.href = 'task.html?id=' + task.id;
+    };
 
     // Гарчгийн мөр (priority цэг + текст)
     const titleRow = document.createElement('div');

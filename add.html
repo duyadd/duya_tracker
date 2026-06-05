@@ -97,6 +97,10 @@ requireAuth('add', (user) => {
   let recentIds = [];
 
   attachDatePicker(fDate, false);
+  const _prefillDate = new URLSearchParams(window.location.search).get('date');
+  if (_prefillDate) {
+    if (fDate._flatpickr) fDate._flatpickr.setDate(_prefillDate); else fDate.value = _prefillDate;
+  }
 
   function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
 
