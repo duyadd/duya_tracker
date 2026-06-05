@@ -40,23 +40,25 @@ requireAuth('personal', (user) => {
   };
 
   async function load() {
+    const filterFolder = new URLSearchParams(window.location.search).get('folder');
+
+    let folderQuery = db.from('folders').select('*').eq('category', CATEGORY).order('id', { ascending: true });
+    if (filterFolder) folderQuery = folderQuery.eq('id', filterFolder);
+
     const [{ data: folderData }, { data: taskData }] = await Promise.all([
-      db.from('folders').select('*').eq('category', CATEGORY).order('id', { ascending: true }),
+      folderQuery,
       db.from('todos').select('*').eq('category', CATEGORY).eq('is_deleted', false)
         .order('priority', { ascending: false }).order('id', { ascending: true })
     ]);
-    render(folderData || [], taskData || []);
+    render(folderData || [], taskData || [], !!filterFolder);
     if (typeof renderNavFolders === 'function') renderNavFolders('personal');
   }
 
-  function render(folders, allTasks) {
+  function render(folders, allTasks, isFiltered) {
     sectionsEl.innerHTML = '';
     let hasContent = false;
 
-    const filterFolder = new URLSearchParams(window.location.search).get('folder');
-    const visibleFolders = filterFolder ? folders.filter(f => String(f.id) === filterFolder) : folders;
-
-    visibleFolders.forEach(folder => {
+    folders.forEach(folder => {
       const folderTasks = allTasks.filter(t => String(t.folder_id) === String(folder.id));
       const active = folderTasks.filter(t => !t.is_completed);
       const doneCount = folderTasks.filter(t => t.is_completed).length;
@@ -64,8 +66,7 @@ requireAuth('personal', (user) => {
       hasContent = true;
     });
 
-    // Tasks not assigned to any folder — only when not filtering
-    if (!filterFolder) {
+    if (!isFiltered) {
       const loose = allTasks.filter(t => !t.folder_id);
       if (loose.length > 0) {
         const looseActive = loose.filter(t => !t.is_completed);
@@ -75,7 +76,7 @@ requireAuth('personal', (user) => {
       }
     }
 
-    emptyEl.classList.toggle('hidden', hasContent || visibleFolders.length > 0);
+    emptyEl.classList.toggle('hidden', hasContent || folders.length > 0);
   }
 
   function buildSection(folder, activeTasks, doneCount, totalCount) {
