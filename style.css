@@ -226,14 +226,14 @@ button:active { transform: scale(0.97); }
 .add-card {
   background: linear-gradient(165deg, var(--surface), var(--surface-2));
   border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px; margin-bottom: 26px;
+  border-radius: var(--radius); padding: 24px; margin-bottom: 28px;
   box-shadow: var(--shadow);
 }
 .add-card .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .add-card input[type=text] { flex: 1; min-width: 160px; margin-bottom: 0; }
 .add-card input[type=date], .add-card input[type=time], .add-card select { width: auto; margin-bottom: 0; }
-.add-card button { padding: 0 22px; background: linear-gradient(180deg, var(--accent), var(--accent-dim)); color: #1a1205; font-weight: 600; box-shadow: 0 4px 14px var(--accent-glow); }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; margin-top: 4px; }
+.add-card button { padding: 13px 22px; background: linear-gradient(180deg, var(--accent), var(--accent-dim)); color: #1a1205; font-weight: 600; box-shadow: 0 4px 14px var(--accent-glow); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 12px; }
 .form-grid > div { min-width: 0; }
 .form-grid select, .form-grid input { width: 100%; }
 @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }

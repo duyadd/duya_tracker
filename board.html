@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="mn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Явц — Төлөвлөгөө</title>
+<title>Board — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="wrap">
-  <h2>Явцын самбар</h2>
-  <p class="subtitle">Даалгавруудыг төлвөөр нь харах. Карт дээр дарж дараагийн төлөв рүү шилжүүлнэ.</p>
+  <h2>Progress board</h2>
+  <p class="subtitle">View tasks by status. Click a card to advance it to the next stage.</p>
 
   <div class="folder-bar" id="cat-bar"></div>
 
@@ -26,16 +26,16 @@ requireAuth('board', (user) => {
   let activeCat = 'all'; // 'all' | 'personal' | 'work'
 
   const COLUMNS = [
-    { key: 'todo',  label: 'Эхлээгүй',  icon: '○' },
-    { key: 'doing', label: 'Явц дээр',  icon: '◐' },
-    { key: 'done',  label: 'Дууссан',   icon: '●' }
+    { key: 'todo',  label: 'Not started', icon: '○' },
+    { key: 'doing', label: 'In progress', icon: '◐' },
+    { key: 'done',  label: 'Done',        icon: '●' }
   ];
   // Дараагийн төлөв (карт дээр дарахад)
   const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
 
   function renderCatBar() {
     catBar.innerHTML = '';
-    [['all','Бүгд'], ['personal','Хувийн'], ['work','Ажил']].forEach(([v, label]) => {
+    [['all','All'], ['personal','Personal'], ['work','Work']].forEach(([v, label]) => {
       const chip = document.createElement('div');
       chip.className = 'folder-chip' + (activeCat === v ? ' active' : '');
       chip.innerText = label;
@@ -83,7 +83,7 @@ requireAuth('board', (user) => {
         meta.className = 'bc-meta';
         const catTag = document.createElement('span');
         catTag.className = 'tag ' + (t.category === 'work' ? 'work' : 'personal');
-        catTag.innerText = t.category === 'work' ? 'Ажил' : 'Хувийн';
+        catTag.innerText = t.category === 'work' ? 'Work' : 'Personal';
         meta.appendChild(catTag);
         if (t.priority > 0) {
           const p = document.createElement('span');
@@ -99,7 +99,7 @@ requireAuth('board', (user) => {
         }
         const hint = document.createElement('div');
         hint.className = 'bc-hint';
-        hint.innerText = 'Дарвал → ' + COLUMNS.find(c => c.key === NEXT[col.key]).label;
+        hint.innerText = 'Click → ' + COLUMNS.find(c => c.key === NEXT[col.key]).label;
         card.append(title, meta, hint);
 
         // Карт дээр дарвал дараагийн төлөв рүү
