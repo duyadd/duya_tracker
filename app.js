@@ -13,7 +13,10 @@ const IC = {
   cal:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
   done:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>`,
   trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
-  fold:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`,
+  fold:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`,
+  search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>`,
+  pencil: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`,
+  meet:   `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
 };
 
 // ===== Сэдэв (dark/light) =====
@@ -57,6 +60,7 @@ async function renderNav(active) {
     <span class="brand">Planner</span>
     <nav class="nav-links">
       <a href="index.html" data-page="home"><span class="nav-icon">${IC.home}</span>Home</a>
+      <a href="search.html" data-page="search"><span class="nav-icon">${IC.search}</span>Search</a>
       <a href="add.html" data-page="add"><span class="nav-icon">${IC.add}</span>Add Task</a>
       <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
       <div class="nav-sub" id="sub-personal"></div>
@@ -236,7 +240,13 @@ function buildTaskLi(task, onChange) {
     }
     const title = document.createElement('div');
     title.className = 'task-title' + (task.is_completed ? ' completed' : '');
-    title.innerText = (task.kind === 'meeting' ? '👥 ' : '') + task.title;
+    if (task.kind === 'meeting') {
+      const mi = document.createElement('span');
+      mi.className = 'meet-icon';
+      mi.innerHTML = IC.meet;
+      title.appendChild(mi);
+    }
+    title.appendChild(document.createTextNode(task.title));
     titleRow.appendChild(title);
     main.appendChild(titleRow);
 
@@ -268,8 +278,8 @@ function buildTaskLi(task, onChange) {
     if (task.due_date) {
       const dueTag = document.createElement('span');
       dueTag.className = 'tag due' + (isOverdue(task.due_date, task.is_completed) ? ' overdue' : '');
-      let dueText = '📅 ' + formatDate(task.due_date);
-      if (task.due_time) dueText += ' ' + formatTime(task.due_time);
+      let dueText = formatDate(task.due_date);
+      if (task.due_time) dueText += ' · ' + formatTime(task.due_time);
       dueTag.innerText = dueText;
       meta.appendChild(dueTag);
     }
@@ -277,7 +287,7 @@ function buildTaskLi(task, onChange) {
       const aTag = document.createElement('span');
       aTag.className = 'tag';
       aTag.style.cssText = 'background:var(--bg);color:var(--muted);border:1px solid var(--border);';
-      aTag.innerText = '👤 ' + task.assignee;
+      aTag.innerText = task.assignee;
       meta.appendChild(aTag);
     }
     main.appendChild(meta);

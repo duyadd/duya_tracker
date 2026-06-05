@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Search — Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap search-wrap">
+  <h2>Search</h2>
+  <p class="subtitle">Find tasks by title or description</p>
+
+  <div class="search-input-row">
+    <span class="search-input-icon" id="search-icon"></span>
+    <input class="search-input" id="search-input" type="text" placeholder="Type to search…" autocomplete="off" autofocus>
+  </div>
+
+  <div class="search-count hidden" id="search-count"></div>
+  <ul id="results" style="list-style:none;padding:0;margin:0;"></ul>
+  <div class="search-placeholder" id="placeholder">Start typing to find tasks</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('search', (user) => {
+  const input       = document.getElementById('search-input');
+  const resultsEl   = document.getElementById('results');
+  const countEl     = document.getElementById('search-count');
+  const placeholder = document.getElementById('placeholder');
+
+  document.getElementById('search-icon').innerHTML = IC.search;
+
+  let timer;
+
+  input.oninput = () => {
+    clearTimeout(timer);
+    timer = setTimeout(doSearch, 280);
+  };
+
+  async function doSearch() {
+    const q = input.value.trim();
+    if (!q) {
+      resultsEl.innerHTML = '';
+      countEl.classList.add('hidden');
+      placeholder.innerText = 'Start typing to find tasks';
+      placeholder.classList.remove('hidden');
+      return;
+    }
+
+    placeholder.classList.add('hidden');
+    countEl.classList.add('hidden');
+
+    const { data } = await db.from('todos')
+      .select('*')
+      .eq('is_deleted', false)
+      .or(`title.ilike.%${q}%,description.ilike.%${q}%`)
+      .order('is_completed', { ascending: true })
+      .order('priority', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(30);
+
+    const tasks = data || [];
+    resultsEl.innerHTML = '';
+
+    if (tasks.length === 0) {
+      placeholder.innerText = `No results for "${q}"`;
+      placeholder.classList.remove('hidden');
+      return;
+    }
+
+    countEl.innerText = tasks.length + (tasks.length === 30 ? '+ results' : ' result' + (tasks.length === 1 ? '' : 's'));
+    countEl.classList.remove('hidden');
+    tasks.forEach(t => resultsEl.appendChild(buildTaskLi(t, doSearch)));
+  }
+});
+</script>
+</body>
+</html>

@@ -77,7 +77,7 @@ requireAuth('done', (user) => {
     relevant.forEach(f => {
       const chip = document.createElement('div');
       chip.className = 'folder-chip' + (activeFolder === f.id ? ' active' : '');
-      chip.innerText = '📁 ' + f.name;
+      chip.innerText = f.name;
       chip.onclick = () => { activeFolder = f.id; render(); };
       folderBar.appendChild(chip);
     });

@@ -78,7 +78,13 @@ requireAuth('board', (user) => {
         card.className = 'board-card' + (col.key === 'done' ? ' done-card' : '');
         const title = document.createElement('div');
         title.className = 'bc-title';
-        title.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
+        if (t.kind === 'meeting') {
+          const mi = document.createElement('span');
+          mi.className = 'meet-icon';
+          mi.innerHTML = IC.meet;
+          title.appendChild(mi);
+        }
+        title.appendChild(document.createTextNode(t.title));
         const meta = document.createElement('div');
         meta.className = 'bc-meta';
         const catTag = document.createElement('span');
@@ -94,23 +100,21 @@ requireAuth('board', (user) => {
         if (t.due_date) {
           const d = document.createElement('span');
           d.className = 'tag due' + (isOverdue(t.due_date, t.is_completed) ? ' overdue' : '');
-          d.innerText = '📅 ' + formatDate(t.due_date);
+          d.innerText = formatDate(t.due_date);
           meta.appendChild(d);
         }
-        const hint = document.createElement('div');
-        hint.className = 'bc-hint';
-        hint.innerText = 'Click → ' + COLUMNS.find(c => c.key === NEXT[col.key]).label;
-        card.append(title, meta, hint);
-
-        // Карт дээр дарвал дараагийн төлөв рүү
-        card.onclick = async () => {
+        const advBtn = document.createElement('button');
+        advBtn.className = 'bc-advance';
+        advBtn.innerText = '→ ' + COLUMNS.find(c => c.key === NEXT[col.key]).label;
+        advBtn.onclick = async (e) => {
+          e.stopPropagation();
           const next = NEXT[col.key];
-          await db.from('todos').update({
-            status: next,
-            is_completed: next === 'done'
-          }).eq('id', t.id);
+          await db.from('todos').update({ status: next, is_completed: next === 'done' }).eq('id', t.id);
           load();
         };
+        card.append(title, meta, advBtn);
+
+        card.onclick = () => { window.location.href = 'task.html?id=' + t.id; };
 
         colEl.appendChild(card);
       });

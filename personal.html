@@ -96,6 +96,18 @@ requireAuth('personal', (user) => {
     right.appendChild(stats);
 
     if (folder) {
+      const renameBtn = document.createElement('button');
+      renameBtn.className = 'fsec-rename';
+      renameBtn.title = 'Rename folder';
+      renameBtn.innerHTML = IC.pencil;
+      renameBtn.onclick = async () => {
+        const name = prompt('Rename folder:', folder.name);
+        if (!name || !name.trim() || name.trim() === folder.name) return;
+        await db.from('folders').update({ name: name.trim() }).eq('id', folder.id);
+        load();
+      };
+      right.appendChild(renameBtn);
+
       const delBtn = document.createElement('button');
       delBtn.className = 'fsec-del';
       delBtn.title = 'Delete folder';
