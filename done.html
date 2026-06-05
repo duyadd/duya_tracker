@@ -84,7 +84,7 @@ requireAuth('done', (user) => {
   }
 
   async function loadTasks() {
-    let q = db.from('todos').select('*').eq('is_completed', true);
+    let q = db.from('todos').select('*').eq('is_completed', true).eq('is_deleted', false);
     if (activeCat !== 'all') q = q.eq('category', activeCat);
     if (activeFolder !== 'all') q = q.eq('folder_id', activeFolder);
     const { data } = await q.order('id', { ascending: false }); // сүүлд дууссан нь дээр

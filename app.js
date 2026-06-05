@@ -52,6 +52,7 @@ async function renderNav(active) {
       <div class="nav-sub" id="sub-work"></div>
       <a href="calendar.html" data-page="calendar">📅 Schedule</a>
       <a href="done.html" data-page="done">✓ Done</a>
+      <a href="trash.html" data-page="trash">🗑 Trash</a>
     </nav>
     <div class="nav-footer">
       <span class="user" id="nav-user"></span>
@@ -273,9 +274,9 @@ function buildTaskLi(task, onChange) {
     const del = document.createElement('button');
     del.className = 'del-btn';
     del.innerText = '✕';
-    del.title = 'Delete';
+    del.title = 'Move to trash';
     del.onclick = async () => {
-      await db.from('todos').delete().eq('id', task.id);
+      await db.from('todos').update({ is_deleted: true }).eq('id', task.id);
       onChange();
     };
 

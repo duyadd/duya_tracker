@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Trash — Planner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Trash</h2>
+  <p class="subtitle">Deleted tasks — restore or permanently remove</p>
+
+  <div id="trash-actions" class="hidden">
+    <button class="trash-clear-btn" id="clear-all-btn">🗑 Empty trash</button>
+  </div>
+
+  <ul id="trash-list"></ul>
+  <div class="empty hidden" id="trash-empty">Trash is empty</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('trash', (user) => {
+  const trashList    = document.getElementById('trash-list');
+  const trashEmpty   = document.getElementById('trash-empty');
+  const trashActions = document.getElementById('trash-actions');
+  const clearAllBtn  = document.getElementById('clear-all-btn');
+
+  async function load() {
+    const { data } = await db.from('todos').select('*')
+      .eq('is_deleted', true).order('id', { ascending: false });
+    render(data || []);
+  }
+
+  function render(tasks) {
+    trashList.innerHTML = '';
+    if (tasks.length === 0) {
+      trashEmpty.classList.remove('hidden');
+      trashActions.classList.add('hidden');
+      return;
+    }
+    trashEmpty.classList.add('hidden');
+    trashActions.classList.remove('hidden');
+    tasks.forEach(t => trashList.appendChild(buildTrashLi(t)));
+  }
+
+  function buildTrashLi(task) {
+    const li = document.createElement('li');
+    li.className = 'task';
+
+    const main = document.createElement('div');
+    main.className = 'task-main';
+
+    const titleRow = document.createElement('div');
+    titleRow.style.cssText = 'display:flex;align-items:center;gap:8px;';
+    if (task.priority > 0) {
+      const dot = document.createElement('div');
+      dot.className = 'prio-dot p' + task.priority;
+      titleRow.appendChild(dot);
+    }
+    const title = document.createElement('div');
+    title.className = 'task-title';
+    title.style.opacity = '0.6';
+    title.innerText = (task.kind === 'meeting' ? '👥 ' : '') + task.title;
+    titleRow.appendChild(title);
+    main.appendChild(titleRow);
+
+    if (task.description) {
+      const desc = document.createElement('div');
+      desc.className = 'task-desc';
+      desc.innerText = task.description;
+      main.appendChild(desc);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+
+    const catTag = document.createElement('span');
+    catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
+    catTag.innerText = task.category === 'work' ? 'Work' : 'Personal';
+    meta.appendChild(catTag);
+
+    if (task.priority > 0) {
+      const pTag = document.createElement('span');
+      pTag.className = 'tag prio-' + task.priority;
+      pTag.innerText = '⚑ ' + PRIORITY_LABELS[task.priority];
+      meta.appendChild(pTag);
+    }
+    if (task.due_date) {
+      const dueTag = document.createElement('span');
+      dueTag.className = 'tag due';
+      dueTag.innerText = '📅 ' + formatDate(task.due_date);
+      meta.appendChild(dueTag);
+    }
+    main.appendChild(meta);
+
+    const recover = document.createElement('button');
+    recover.className = 'trash-recover-btn';
+    recover.innerText = '↩ Recover';
+    recover.title = 'Restore task';
+    recover.onclick = async () => {
+      await db.from('todos').update({ is_deleted: false }).eq('id', task.id);
+      load();
+    };
+
+    const purge = document.createElement('button');
+    purge.className = 'trash-purge-btn';
+    purge.innerText = '✕';
+    purge.title = 'Delete permanently';
+    purge.onclick = async () => {
+      if (!confirm('"' + task.title + '" will be permanently deleted. Continue?')) return;
+      await db.from('todos').delete().eq('id', task.id);
+      load();
+    };
+
+    li.append(main, recover, purge);
+    return li;
+  }
+
+  clearAllBtn.onclick = async () => {
+    if (!confirm('Permanently delete all trashed tasks? This cannot be undone.')) return;
+    await db.from('todos').delete().eq('is_deleted', true);
+    load();
+  };
+
+  load();
+});
+</script>
+</body>
+</html>

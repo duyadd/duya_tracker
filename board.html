@@ -45,7 +45,7 @@ requireAuth('board', (user) => {
   }
 
   async function load() {
-    let q = db.from('todos').select('*');
+    let q = db.from('todos').select('*').eq('is_deleted', false);
     if (activeCat !== 'all') q = q.eq('category', activeCat);
     const { data } = await q.order('priority', { ascending: false }).order('id', { ascending: true });
     const tasks = data || [];

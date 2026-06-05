@@ -90,7 +90,7 @@ requireAuth('personal', (user) => {
   }
 
   async function loadTasks() {
-    let q = db.from('todos').select('*').eq('category', CATEGORY).eq('is_completed', false);
+    let q = db.from('todos').select('*').eq('category', CATEGORY).eq('is_completed', false).eq('is_deleted', false);
     if (activeFolder !== 'all') q = q.eq('folder_id', activeFolder);
     // Эрэмбэ: чухал зэрэг буурахаар, дараа нь id
     const { data } = await q.order('priority', { ascending: false }).order('id', { ascending: true });

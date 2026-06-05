@@ -286,6 +286,14 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
 .prio-dot.p2 { background: var(--danger); }
 .del-btn { background: transparent; color: var(--muted-2); font-size: 17px; padding: 4px 7px; line-height: 1; }
 .del-btn:hover { color: var(--danger); }
+
+/* ===== Trash page ===== */
+.trash-recover-btn { background: rgba(81,194,101,0.12); color: var(--done); border: 1px solid rgba(81,194,101,0.3); padding: 7px 13px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; flex-shrink: 0; }
+.trash-recover-btn:hover { background: rgba(81,194,101,0.22); }
+.trash-purge-btn { background: transparent; color: var(--muted-2); font-size: 17px; padding: 4px 7px; line-height: 1; flex-shrink: 0; }
+.trash-purge-btn:hover { color: var(--danger); }
+.trash-clear-btn { background: rgba(232,89,106,0.1); color: var(--danger); border: 1px solid rgba(232,89,106,0.25); padding: 8px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; margin-bottom: 18px; }
+.trash-clear-btn:hover { background: rgba(232,89,106,0.2); }
 .edit-btn { background: transparent; color: var(--muted-2); font-size: 15px; padding: 4px 7px; line-height: 1; }
 .edit-btn:hover { color: var(--accent); }
 .empty { text-align: center; color: var(--muted-2); font-size: 14px; padding: 36px 0; font-weight: 300; animation: fadeUp 0.4s var(--ease); }

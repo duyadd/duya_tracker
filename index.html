@@ -43,7 +43,7 @@
 <script src="app.js"></script>
 <script>
 requireAuth('home', async (user) => {
-  const { data: todos } = await db.from('todos').select('*');
+  const { data: todos } = await db.from('todos').select('*').eq('is_deleted', false);
   const list = todos || [];
 
   // ----- Тоймын картууд -----

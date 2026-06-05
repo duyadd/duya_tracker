@@ -89,7 +89,7 @@ requireAuth('calendar', (user) => {
       days[6].toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
     const { data } = await db.from('todos').select('*')
-      .gte('due_date', ymd(days[0])).lte('due_date', ymd(days[6]));
+      .eq('is_deleted', false).gte('due_date', ymd(days[0])).lte('due_date', ymd(days[6]));
     const items = data || [];
     const todayStr = ymd(new Date());
 
@@ -141,7 +141,7 @@ requireAuth('calendar', (user) => {
     if (edow < 6) endDay.setDate(endDay.getDate() + (6 - edow));
 
     const { data } = await db.from('todos').select('*')
-      .gte('due_date', ymd(startDay)).lte('due_date', ymd(endDay));
+      .eq('is_deleted', false).gte('due_date', ymd(startDay)).lte('due_date', ymd(endDay));
     const items    = data || [];
     const todayStr = ymd(new Date());
 
