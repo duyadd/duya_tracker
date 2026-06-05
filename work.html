@@ -158,20 +158,25 @@ requireAuth('work', (user) => {
     });
     sectionsEl.appendChild(sortBar);
 
-    // Sort tasks
-    let sorted = [...tasks];
-    if (sortBy === 'due') {
-      sorted.sort((a, b) => {
-        if (!a.due_date && !b.due_date) return 0;
-        if (!a.due_date) return 1;
-        if (!b.due_date) return -1;
-        return a.due_date.localeCompare(b.due_date);
-      });
-    } else {
-      sorted.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    // Board
+    const COLS = [
+      { key: 'todo',  label: 'Not started' },
+      { key: 'doing', label: 'In progress' },
+      { key: 'done',  label: 'Done' }
+    ];
+    const NEXT = { todo: 'doing', doing: 'done', done: 'todo' };
+
+    function sortTasks(arr) {
+      if (sortBy === 'due') {
+        return [...arr].sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return a.due_date.localeCompare(b.due_date);
+        });
+      }
+      return [...arr].sort((a, b) => (b.priority || 0) - (a.priority || 0));
     }
-    const active = sorted.filter(t => !t.is_completed);
-    const done   = sorted.filter(t => t.is_completed);
 
     if (tasks.length === 0) {
       const msg = document.createElement('div');
@@ -180,15 +185,79 @@ requireAuth('work', (user) => {
       msg.innerText = 'No tasks in this folder yet';
       sectionsEl.appendChild(msg);
     } else {
-      const ul = document.createElement('ul');
-      ul.className = 'fd-task-list';
-      [...active, ...done].forEach(t => ul.appendChild(buildTaskLi(t, load, { hideCatTag: true })));
-      sectionsEl.appendChild(ul);
+      const board = document.createElement('div');
+      board.className = 'board';
+
+      COLS.forEach(col => {
+        const colTasks = sortTasks(tasks.filter(t => {
+          const st = t.status || (t.is_completed ? 'done' : 'todo');
+          return st === col.key;
+        }));
+
+        const colEl = document.createElement('div');
+        colEl.className = 'board-col';
+        colEl.innerHTML = `<div class="board-col-head">
+          <span class="ttl"><span class="board-dot ${col.key}"></span>${col.label}</span>
+          <span class="cnt">${colTasks.length}</span>
+        </div>`;
+
+        if (colTasks.length === 0) {
+          const e = document.createElement('div');
+          e.className = 'board-empty'; e.innerText = '—';
+          colEl.appendChild(e);
+        }
+
+        colTasks.forEach(t => {
+          const card = document.createElement('div');
+          card.className = 'board-card' + (col.key === 'done' ? ' done-card' : '');
+
+          const title = document.createElement('div');
+          title.className = 'bc-title';
+          if (t.kind === 'meeting') {
+            const mi = document.createElement('span');
+            mi.className = 'meet-icon'; mi.innerHTML = IC.meet;
+            title.appendChild(mi);
+          }
+          title.appendChild(document.createTextNode(t.title));
+
+          const meta = document.createElement('div');
+          meta.className = 'bc-meta';
+          if (t.priority > 0) {
+            const p = document.createElement('span');
+            p.className = 'tag prio-' + t.priority; p.innerText = '⚑';
+            meta.appendChild(p);
+          }
+          if (t.due_date) {
+            const d = document.createElement('span');
+            d.className = 'tag due' + (isOverdue(t.due_date, t.is_completed) ? ' overdue' : '');
+            d.innerText = formatDate(t.due_date);
+            meta.appendChild(d);
+          }
+
+          const advBtn = document.createElement('button');
+          advBtn.className = 'bc-advance';
+          advBtn.innerText = '→ ' + COLS.find(c => c.key === NEXT[col.key]).label;
+          advBtn.onclick = async (e) => {
+            e.stopPropagation();
+            const next = NEXT[col.key];
+            await db.from('todos').update({ status: next, is_completed: next === 'done' }).eq('id', t.id);
+            load();
+          };
+
+          card.append(title, meta, advBtn);
+          card.onclick = () => { window.location.href = 'task.html?id=' + t.id; };
+          colEl.appendChild(card);
+        });
+
+        board.appendChild(colEl);
+      });
+
+      sectionsEl.appendChild(board);
     }
 
     const addLink = document.createElement('a');
     addLink.className = 'fsec-add-btn';
-    addLink.style.marginTop = '12px';
+    addLink.style.marginTop = '16px';
     addLink.href = `add.html?cat=${CATEGORY}&folder=${folder.id}`;
     addLink.innerText = '+ Add task';
     sectionsEl.appendChild(addLink);
