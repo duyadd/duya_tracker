@@ -53,7 +53,10 @@ requireAuth('personal', (user) => {
     sectionsEl.innerHTML = '';
     let hasContent = false;
 
-    folders.forEach(folder => {
+    const filterFolder = new URLSearchParams(window.location.search).get('folder');
+    const visibleFolders = filterFolder ? folders.filter(f => String(f.id) === filterFolder) : folders;
+
+    visibleFolders.forEach(folder => {
       const folderTasks = allTasks.filter(t => String(t.folder_id) === String(folder.id));
       const active = folderTasks.filter(t => !t.is_completed);
       const doneCount = folderTasks.filter(t => t.is_completed).length;
@@ -61,16 +64,18 @@ requireAuth('personal', (user) => {
       hasContent = true;
     });
 
-    // Tasks not assigned to any folder
-    const loose = allTasks.filter(t => !t.folder_id);
-    if (loose.length > 0) {
-      const looseActive = loose.filter(t => !t.is_completed);
-      const looseDone   = loose.filter(t => t.is_completed).length;
-      sectionsEl.appendChild(buildSection(null, looseActive, looseDone, loose.length));
-      hasContent = true;
+    // Tasks not assigned to any folder — only when not filtering
+    if (!filterFolder) {
+      const loose = allTasks.filter(t => !t.folder_id);
+      if (loose.length > 0) {
+        const looseActive = loose.filter(t => !t.is_completed);
+        const looseDone   = loose.filter(t => t.is_completed).length;
+        sectionsEl.appendChild(buildSection(null, looseActive, looseDone, loose.length));
+        hasContent = true;
+      }
     }
 
-    emptyEl.classList.toggle('hidden', hasContent || folders.length > 0);
+    emptyEl.classList.toggle('hidden', hasContent || visibleFolders.length > 0);
   }
 
   function buildSection(folder, activeTasks, doneCount, totalCount) {
