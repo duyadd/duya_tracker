@@ -345,7 +345,9 @@ function buildTaskLi(task, onChange) {
       const newTitle = titleInput.value.trim();
       if (!newTitle) { titleInput.focus(); return; }
       const st = statusSelect.value;
-      await db.from('todos').update({
+      // Ангилал өөрчлөгдвөл фолдероос салгах (фолдер нь ангилалд хамаардаг)
+      const categoryChanged = catSelect.value !== task.category;
+      const upd = {
         title: newTitle,
         description: descInput.value.trim() || null,
         due_date: dueInput.value || null,
@@ -356,7 +358,9 @@ function buildTaskLi(task, onChange) {
         is_completed: st === 'done',
         kind: kindSelect.value,
         assignee: assigneeInput.value.trim() || null
-      }).eq('id', task.id);
+      };
+      if (categoryChanged) upd.folder_id = null;
+      await db.from('todos').update(upd).eq('id', task.id);
       onChange();
     };
     const cancel = document.createElement('button');

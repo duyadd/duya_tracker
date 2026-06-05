@@ -61,34 +61,44 @@ requireAuth('personal', (user) => {
       .eq('category', CATEGORY).order('id', { ascending: true });
     folders = data || [];
     renderFolders();
+    if (typeof renderNavFolders === 'function') renderNavFolders(CATEGORY);
   }
 
   function renderFolders() {
     folderBar.innerHTML = '';
-    const allChip = document.createElement('div');
-    allChip.className = 'folder-chip' + (activeFolder === 'all' ? ' active' : '');
-    allChip.innerText = 'Бүгд';
-    allChip.onclick = () => { activeFolder = 'all'; renderFolders(); loadTasks(); };
-    folderBar.appendChild(allChip);
-
-    folders.forEach(f => {
+    // Одоогийн шүүлтийн төлөв: "Бүгд" эсвэл сонгосон фолдер
+    if (activeFolder === 'all') {
+      const allChip = document.createElement('div');
+      allChip.className = 'folder-chip active';
+      allChip.innerText = 'Бүх даалгавар';
+      folderBar.appendChild(allChip);
+    } else {
+      const cur = folders.find(f => String(f.id) === String(activeFolder));
       const chip = document.createElement('div');
-      chip.className = 'folder-chip' + (String(activeFolder) === String(f.id) ? ' active' : '');
-      const label = document.createElement('span');
-      label.innerText = '📁 ' + f.name;
-      label.onclick = () => { activeFolder = f.id; renderFolders(); loadTasks(); };
-      const x = document.createElement('span');
-      x.className = 'x'; x.innerText = '✕';
-      x.onclick = async (e) => {
-        e.stopPropagation();
-        if (!confirm(`"${f.name}" фолдерыг устгах уу? (доторх даалгаврууд устахгүй, зүгээр фолдергүй болно)`)) return;
-        await db.from('folders').delete().eq('id', f.id);
-        if (String(activeFolder) === String(f.id)) activeFolder = 'all';
-        loadFolders(); loadTasks();
-      };
-      chip.append(label, x);
+      chip.className = 'folder-chip active';
+      chip.innerText = '📁 ' + (cur ? cur.name : 'Фолдер');
       folderBar.appendChild(chip);
-    });
+
+      const allLink = document.createElement('div');
+      allLink.className = 'folder-chip';
+      allLink.innerText = '← Бүгд';
+      allLink.onclick = () => { activeFolder = 'all'; renderFolders(); loadTasks(); };
+      folderBar.appendChild(allLink);
+
+      // Сонгосон фолдерыг устгах
+      if (cur) {
+        const del = document.createElement('div');
+        del.className = 'folder-chip';
+        del.innerText = '🗑 Устгах';
+        del.onclick = async () => {
+          if (!confirm(`"${cur.name}" фолдерыг устгах уу? (доторх даалгаврууд устахгүй, зүгээр фолдергүй болно)`)) return;
+          await db.from('folders').delete().eq('id', cur.id);
+          activeFolder = 'all';
+          loadFolders(); loadTasks();
+        };
+        folderBar.appendChild(del);
+      }
+    }
 
     const addBtn = document.createElement('button');
     addBtn.className = 'add-folder';
