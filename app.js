@@ -198,7 +198,8 @@ function attachDatePicker(el, withTime) {
 
 // ===== Нэг даалгаврын <li> элемент үүсгэх =====
 // onChange — toggle/delete/edit хийсний дараа жагсаалтыг дахин ачаалах callback
-function buildTaskLi(task, onChange) {
+function buildTaskLi(task, onChange, opts) {
+  opts = opts || {};
   const li = document.createElement('li');
   li.className = 'task';
 
@@ -251,7 +252,7 @@ function buildTaskLi(task, onChange) {
     main.appendChild(titleRow);
 
     // Тайлбар (байвал)
-    if (task.description) {
+    if (task.description && !opts.hideDesc) {
       const desc = document.createElement('div');
       desc.className = 'task-desc';
       desc.innerText = task.description;
@@ -265,10 +266,12 @@ function buildTaskLi(task, onChange) {
     // Төлөв — нэгдсэн dropdown
     meta.appendChild(buildStatusSelect(task, onChange));
 
-    const catTag = document.createElement('span');
-    catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
-    catTag.innerText = task.category === 'work' ? 'Work' : 'Personal';
-    meta.appendChild(catTag);
+    if (!opts.hideCatTag) {
+      const catTag = document.createElement('span');
+      catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
+      catTag.innerText = task.category === 'work' ? 'Work' : 'Personal';
+      meta.appendChild(catTag);
+    }
     if (task.priority > 0) {
       const pTag = document.createElement('span');
       pTag.className = 'tag prio-' + task.priority;

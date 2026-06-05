@@ -141,7 +141,7 @@ requireAuth('work', (user) => {
     } else {
       const ul = document.createElement('ul');
       ul.className = 'fsec-list';
-      activeTasks.forEach(t => ul.appendChild(buildTaskLi(t, load)));
+      activeTasks.forEach(t => ul.appendChild(buildTaskLi(t, load, { hideDesc: true, hideCatTag: true })));
       sec.appendChild(ul);
     }
 
