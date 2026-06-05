@@ -97,9 +97,7 @@ requireAuth('calendar', (user) => {
     days.forEach((d, idx) => {
       const dStr = ymd(d);
       const col = document.createElement('div');
-      col.className = 'day-col clickable-day' + (dStr === todayStr ? ' today' : '');
-      col.title = 'Add task on ' + d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
-      col.onclick = () => { window.location.href = 'add.html?date=' + dStr; };
+      col.className = 'day-col' + (dStr === todayStr ? ' today' : '');
 
       const head = document.createElement('div');
       head.className = 'day-head';
@@ -127,10 +125,12 @@ requireAuth('calendar', (user) => {
         col.appendChild(item);
       });
 
-      // "+ add" hint shown on hover when day is empty
+      // "+" button in bottom-right corner — only this navigates to add task
       const hint = document.createElement('div');
       hint.className = 'day-add-hint';
-      hint.innerText = '+ Add';
+      hint.innerText = '+';
+      hint.title = 'Add task on ' + d.toLocaleDateString('en-US', {month:'short', day:'numeric'});
+      hint.onclick = (e) => { e.stopPropagation(); window.location.href = 'add.html?date=' + dStr; };
       col.appendChild(hint);
 
       grid.appendChild(col);
