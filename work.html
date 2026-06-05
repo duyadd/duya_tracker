@@ -33,6 +33,7 @@ requireAuth('work', (user) => {
   const emptyEl    = document.getElementById('empty');
   const newFolderBtn = document.getElementById('new-folder-btn');
   let sortBy = 'priority';
+  let editingStages = false;
 
   newFolderBtn.onclick = async () => {
     const name = prompt('Folder name:');
@@ -90,6 +91,11 @@ requireAuth('work', (user) => {
   }
 
   function renderFolderDetail(folder, allTasks) {
+    const DEFAULT_STAGES = [{id:'todo',label:'Not started'},{id:'doing',label:'In progress'}];
+    const stages = (folder.custom_statuses && folder.custom_statuses.length > 0)
+      ? folder.custom_statuses : DEFAULT_STAGES;
+    const DOT_COLORS = ['var(--muted)','var(--accent)','var(--personal)','var(--done)','var(--danger)'];
+
     const tasks = allTasks.filter(t => String(t.folder_id) === String(folder.id));
     const doneCount = tasks.filter(t => t.is_completed).length;
     const totalCount = tasks.length;
@@ -98,22 +104,24 @@ requireAuth('work', (user) => {
     // Header
     const head = document.createElement('div');
     head.className = 'fd-head';
-
     const nameEl = document.createElement('div');
     nameEl.className = 'fd-name';
     nameEl.innerHTML = `<span class="nav-icon">${IC.fold}</span>${folder.name}`;
-
     const right = document.createElement('div');
     right.className = 'fd-right';
-
     const statsEl = document.createElement('span');
     statsEl.className = 'fd-stats';
     statsEl.innerText = totalCount > 0 ? `${doneCount} / ${totalCount} done · ${pct}%` : 'No tasks yet';
     right.appendChild(statsEl);
 
+    const editStagesBtn = document.createElement('button');
+    editStagesBtn.className = 'fd-edit-stages-btn';
+    editStagesBtn.innerText = editingStages ? '✕ Cancel' : 'Edit stages';
+    editStagesBtn.onclick = () => { editingStages = !editingStages; load(); };
+    right.appendChild(editStagesBtn);
+
     const renameBtn = document.createElement('button');
-    renameBtn.className = 'fsec-rename';
-    renameBtn.title = 'Rename folder';
+    renameBtn.className = 'fsec-rename'; renameBtn.title = 'Rename folder';
     renameBtn.innerHTML = IC.pencil;
     renameBtn.onclick = async () => {
       const name = prompt('Rename folder:', folder.name);
@@ -124,8 +132,7 @@ requireAuth('work', (user) => {
     right.appendChild(renameBtn);
 
     const delBtn = document.createElement('button');
-    delBtn.className = 'fsec-del';
-    delBtn.title = 'Delete folder';
+    delBtn.className = 'fsec-del'; delBtn.title = 'Delete folder';
     delBtn.innerHTML = IC.trash;
     delBtn.onclick = async () => {
       if (!confirm(`Delete folder "${folder.name}"? Tasks will become unassigned.`)) return;
@@ -133,7 +140,6 @@ requireAuth('work', (user) => {
       window.location.href = 'work.html';
     };
     right.appendChild(delBtn);
-
     head.append(nameEl, right);
     sectionsEl.appendChild(head);
 
@@ -146,73 +152,164 @@ requireAuth('work', (user) => {
     progWrap.appendChild(progFill);
     sectionsEl.appendChild(progWrap);
 
-    // Controls row: sort + period filter
+    // ── Stage editor ──────────────────────────────────────────
+    if (editingStages) {
+      let editStages = JSON.parse(JSON.stringify(stages));
+      const panel = document.createElement('div');
+      panel.className = 'stage-editor';
+
+      const panelTitle = document.createElement('div');
+      panelTitle.className = 'stage-editor-title';
+      panelTitle.innerText = 'Stages';
+      panel.appendChild(panelTitle);
+
+      const listEl = document.createElement('div');
+      listEl.className = 'stage-editor-list';
+
+      function renderList() {
+        listEl.innerHTML = '';
+        editStages.forEach((s, i) => {
+          const row = document.createElement('div');
+          row.className = 'stage-editor-row';
+          const dot = document.createElement('div');
+          dot.className = 'board-dot';
+          dot.style.background = DOT_COLORS[i % DOT_COLORS.length];
+          dot.style.flexShrink = '0';
+          const input = document.createElement('input');
+          input.type = 'text'; input.value = s.label;
+          input.className = 'stage-editor-input';
+          input.oninput = () => { editStages[i] = {...editStages[i], label: input.value}; };
+          const del = document.createElement('button');
+          del.className = 'fsec-del'; del.innerHTML = IC.trash;
+          del.onclick = () => { if (editStages.length > 1) { editStages.splice(i, 1); renderList(); } };
+          row.append(dot, input, del);
+          listEl.appendChild(row);
+        });
+      }
+      renderList();
+      panel.appendChild(listEl);
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'stage-editor-add';
+      addBtn.innerText = '+ Add stage';
+      addBtn.onclick = () => {
+        editStages.push({id: 'stage_' + Date.now(), label: 'New stage'});
+        renderList();
+      };
+      panel.appendChild(addBtn);
+
+      const actions = document.createElement('div');
+      actions.className = 'stage-editor-actions';
+      const saveBtn = document.createElement('button');
+      saveBtn.className = 'btn-save'; saveBtn.innerText = 'Save';
+      saveBtn.onclick = async () => {
+        const valid = editStages.filter(s => s.label.trim());
+        await db.from('folders').update({custom_statuses: valid}).eq('id', folder.id);
+        editingStages = false;
+        load();
+      };
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn-cancel'; cancelBtn.innerText = 'Cancel';
+      cancelBtn.onclick = () => { editingStages = false; load(); };
+      actions.append(saveBtn, cancelBtn);
+      panel.appendChild(actions);
+      sectionsEl.appendChild(panel);
+      return;
+    }
+
+    // ── Board ─────────────────────────────────────────────────
     const ctrlRow = document.createElement('div');
     ctrlRow.className = 'fd-ctrl-row';
-
     const sortBar = document.createElement('div');
     sortBar.className = 'fd-sort-bar';
-    [['priority', 'Priority'], ['due', 'Due date']].forEach(([key, label]) => {
+    [['priority','Priority'],['due','Due date']].forEach(([key, label]) => {
       const btn = document.createElement('button');
       btn.className = 'fd-sort-btn' + (sortBy === key ? ' active' : '');
       btn.innerText = label;
       btn.onclick = () => { sortBy = key; load(); };
       sortBar.appendChild(btn);
     });
-
     ctrlRow.append(sortBar);
     sectionsEl.appendChild(ctrlRow);
 
-    // Board
-    const COLS = [
-      { key: 'todo',  label: 'Not started' },
-      { key: 'doing', label: 'In progress' }
-    ];
     function sortTasks(arr) {
-      if (sortBy === 'due') {
-        return [...arr].sort((a, b) => {
-          if (!a.due_date && !b.due_date) return 0;
-          if (!a.due_date) return 1;
-          if (!b.due_date) return -1;
-          return a.due_date.localeCompare(b.due_date);
-        });
-      }
-      return [...arr].sort((a, b) => (b.priority || 0) - (a.priority || 0));
+      if (sortBy === 'due') return [...arr].sort((a,b) => {
+        if (!a.due_date && !b.due_date) return 0;
+        if (!a.due_date) return 1; if (!b.due_date) return -1;
+        return a.due_date.localeCompare(b.due_date);
+      });
+      return [...arr].sort((a,b) => (b.priority||0) - (a.priority||0));
+    }
+
+    function buildStageSelect(task) {
+      const sel = document.createElement('select');
+      sel.className = 'status-select';
+      stages.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id; opt.innerText = s.label;
+        sel.appendChild(opt);
+      });
+      const doneOpt = document.createElement('option');
+      doneOpt.value = 'done'; doneOpt.innerText = '● Mark as done';
+      sel.appendChild(doneOpt);
+      const cur = task.status || (task.is_completed ? 'done' : stages[0].id);
+      sel.value = (stages.some(s => s.id === cur) || cur === 'done') ? cur : stages[0].id;
+      sel.setAttribute('data-status', sel.value);
+      sel.onclick = e => e.stopPropagation();
+      sel.onchange = async e => {
+        e.stopPropagation();
+        const next = sel.value;
+        sel.setAttribute('data-status', next);
+        await db.from('todos').update({status: next, is_completed: next === 'done'}).eq('id', task.id);
+        task.status = next; task.is_completed = next === 'done';
+        load();
+      };
+      return sel;
     }
 
     if (tasks.length === 0) {
       const msg = document.createElement('div');
-      msg.className = 'fsec-empty';
-      msg.style.padding = '40px 0';
+      msg.className = 'fsec-empty'; msg.style.padding = '40px 0';
       msg.innerText = 'No tasks in this folder yet';
       sectionsEl.appendChild(msg);
     } else {
+      const colCount = stages.length;
       const board = document.createElement('div');
-      board.className = 'board board-2col';
+      board.className = 'board';
+      board.style.gridTemplateColumns = `repeat(${colCount}, 1fr)`;
 
-      COLS.forEach(col => {
+      stages.forEach((col, idx) => {
         const colTasks = sortTasks(tasks.filter(t => {
-          const st = t.status || (t.is_completed ? 'done' : 'todo');
-          return st === col.key && (col.key !== 'done' || inPeriod(t));
+          if (t.is_completed) return false;
+          const st = t.status || stages[0].id;
+          const inStage = st === col.id;
+          const isOrphan = !stages.some(s => s.id === st) && idx === 0;
+          return inStage || isOrphan;
         }));
 
         const colEl = document.createElement('div');
         colEl.className = 'board-col';
-        colEl.innerHTML = `<div class="board-col-head">
-          <span class="ttl"><span class="board-dot ${col.key}"></span>${col.label}</span>
-          <span class="cnt">${colTasks.length}</span>
-        </div>`;
+        const colHead = document.createElement('div');
+        colHead.className = 'board-col-head';
+        const ttl = document.createElement('span');
+        ttl.className = 'ttl';
+        const dot = document.createElement('span');
+        dot.className = 'board-dot';
+        dot.style.background = DOT_COLORS[idx % DOT_COLORS.length];
+        ttl.append(dot, document.createTextNode(col.label));
+        const cnt = document.createElement('span');
+        cnt.className = 'cnt'; cnt.innerText = colTasks.length;
+        colHead.append(ttl, cnt);
+        colEl.appendChild(colHead);
 
         if (colTasks.length === 0) {
           const e = document.createElement('div');
           e.className = 'board-empty'; e.innerText = '—';
           colEl.appendChild(e);
         }
-
         colTasks.forEach(t => {
           const card = document.createElement('div');
-          card.className = 'board-card' + (col.key === 'done' ? ' done-card' : '');
-
+          card.className = 'board-card';
           const title = document.createElement('div');
           title.className = 'bc-title';
           if (t.kind === 'meeting') {
@@ -221,7 +318,6 @@ requireAuth('work', (user) => {
             title.appendChild(mi);
           }
           title.appendChild(document.createTextNode(t.title));
-
           const meta = document.createElement('div');
           meta.className = 'bc-meta';
           if (t.priority > 0) {
@@ -235,19 +331,12 @@ requireAuth('work', (user) => {
             d.innerText = formatDate(t.due_date);
             meta.appendChild(d);
           }
-
-          const sel = buildStatusSelect(t, load);
-          card.append(title, meta, sel);
-          card.onclick = (e) => {
-            if (e.target.closest('.status-select')) return;
-            window.location.href = 'task.html?id=' + t.id;
-          };
+          card.append(title, meta, buildStageSelect(t));
+          card.onclick = e => { if (e.target.closest('.status-select')) return; window.location.href = 'task.html?id=' + t.id; };
           colEl.appendChild(card);
         });
-
         board.appendChild(colEl);
       });
-
       sectionsEl.appendChild(board);
     }
 

@@ -462,6 +462,24 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
 .fd-sort-btn.active { background: var(--accent-glow); border-color: var(--accent); color: var(--accent); }
 .fd-task-list { list-style: none; padding: 0; margin: 0; }
 
+/* Stage editor */
+.fd-edit-stages-btn {
+  padding: 5px 11px; font-size: 12px; font-weight: 500;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--muted); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s var(--ease);
+}
+.fd-edit-stages-btn:hover { color: var(--text); border-color: var(--muted); }
+.stage-editor { margin-top: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+.stage-editor-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+.stage-editor-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.stage-editor-row { display: flex; align-items: center; gap: 10px; }
+.stage-editor-input { flex: 1; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-size: 14px; font-family: inherit; }
+.stage-editor-input:focus { outline: none; border-color: var(--accent); }
+.stage-editor-add { width: 100%; padding: 8px; background: none; border: 1px dashed var(--border); color: var(--muted); border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; margin-bottom: 16px; transition: all 0.15s var(--ease); }
+.stage-editor-add:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
+.stage-editor-actions { display: flex; gap: 8px; }
+
 .page-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   margin-top: 28px; padding: 15px 20px;
