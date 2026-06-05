@@ -20,10 +20,9 @@
     <button class="new-folder-btn" id="new-folder-btn">+ New folder</button>
   </div>
 
-  <div id="sections"></div>
+  <div id="sections" class="fsec-row"></div>
   <div class="empty hidden" id="empty">No work tasks yet. Hit "Add Task" to get started.</div>
 
-  <a href="add.html?cat=work" class="page-add-btn">Add Task</a>
 </div>
 
 <script src="app.js"></script>
@@ -133,6 +132,13 @@ requireAuth('work', (user) => {
       activeTasks.forEach(t => ul.appendChild(buildTaskLi(t, load)));
       sec.appendChild(ul);
     }
+
+    // Per-folder add button
+    const addLink = document.createElement('a');
+    addLink.className = 'fsec-add-btn';
+    addLink.href = 'add.html?cat=' + CATEGORY + (folder ? '&folder=' + folder.id : '');
+    addLink.innerText = '+ Add task';
+    sec.appendChild(addLink);
 
     return sec;
   }

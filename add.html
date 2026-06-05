@@ -136,6 +136,8 @@ requireAuth('add', (user) => {
     const { data } = await db.from('folders').select('*').order('id', { ascending: true });
     folders = data || [];
     renderFolderOptions();
+    const _prefillFolder = _qs.get('folder');
+    if (_prefillFolder) fFolder.value = _prefillFolder;
   }
   function renderFolderOptions() {
     const cat = getBtnGroupVal('f-category');

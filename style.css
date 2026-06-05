@@ -370,32 +370,51 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
 }
 .new-folder-btn:hover { color: var(--text); border-color: var(--muted-2); }
 
+/* Horizontal row of folder cards */
+.fsec-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
+
 .fsec {
+  flex: 1 1 240px;
+  min-width: 220px;
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
-  padding: 18px 20px 14px;
-  margin-bottom: 10px;
+  padding: 18px 18px 12px;
+  display: flex;
+  flex-direction: column;
 }
 .fsec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-.fsec-name { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: var(--text); }
-.fsec-right { display: flex; align-items: center; gap: 10px; }
-.fsec-stats { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.fsec-name { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text); }
+.fsec-right { display: flex; align-items: center; gap: 8px; }
+.fsec-stats { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .fsec-del {
   background: none; border: none; padding: 3px; cursor: pointer;
   color: var(--muted-2); border-radius: 4px; display: flex; align-items: center;
   transition: color 0.18s var(--ease);
 }
 .fsec-del:hover { color: var(--danger); }
-.fsec-prog-wrap { height: 3px; background: var(--surface-3); border-radius: 9999px; overflow: hidden; margin-bottom: 14px; }
+.fsec-prog-wrap { height: 3px; background: var(--surface-3); border-radius: 9999px; overflow: hidden; margin-bottom: 12px; }
 .fsec-prog-fill { height: 100%; border-radius: 9999px; min-width: 0; transition: width 0.5s var(--ease); }
 .fsec-prog-fill.personal { background: var(--personal); }
 .fsec-prog-fill.work     { background: var(--accent); }
-.fsec-list { list-style: none; padding: 0; margin: 0; }
+.fsec-list { list-style: none; padding: 0; margin: 0; flex: 1; }
 .fsec-list .task { border-bottom: 1px solid var(--border-soft); }
 .fsec-list .task:last-child { border-bottom: none; }
-.fsec-empty { color: var(--muted-2); font-size: 13px; padding: 10px 0 6px; }
-.fsec-all-done { color: var(--done); font-size: 13px; padding: 10px 0 6px; }
+.fsec-empty    { color: var(--muted-2); font-size: 13px; padding: 8px 0 4px; flex: 1; }
+.fsec-all-done { color: var(--done);    font-size: 13px; padding: 8px 0 4px; flex: 1; }
+.fsec-add-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 12px; padding: 8px;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 500;
+  text-decoration: none;
+  transition: all 0.18s var(--ease);
+  cursor: pointer;
+}
+.fsec-add-btn:hover { border-color: var(--accent); color: var(--accent); border-style: solid; }
 
 .page-add-btn {
   display: flex; align-items: center; justify-content: center; gap: 8px;
