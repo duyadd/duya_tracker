@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Нүүр — Төлөвлөгөө</title>
+<title>Home — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
@@ -12,20 +12,20 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Тойм</h2>
-  <p class="subtitle">Өнөөдрийн байдал</p>
+  <h2>Overview</h2>
+  <p class="subtitle">Today's snapshot</p>
   <div class="cards" id="cards"></div>
 
   <div class="view-toggle">
-    <button id="btn-today" class="active">Өнөөдөр</button>
-    <button id="btn-week">Долоо хоног</button>
-    <button id="btn-progress">Явц</button>
+    <button id="btn-today" class="active">Today</button>
+    <button id="btn-week">Week</button>
+    <button id="btn-progress">Progress</button>
   </div>
 
   <!-- Өнөөдрийн agenda -->
   <div id="today-view">
     <ul id="agenda-list" style="list-style:none;"></ul>
-    <div class="empty hidden" id="empty-today">Өнөөдөр товлосон зүйл алга 🌤️</div>
+    <div class="empty hidden" id="empty-today">Nothing scheduled for today 🌤️</div>
   </div>
 
   <!-- Долоо хоногийн жижиг харагдац -->
@@ -55,12 +55,12 @@ requireAuth('home', async (user) => {
   const highPrio = list.filter(t => t.priority === 2 && !t.is_completed).length;
   const pct = total ? Math.round(done / total * 100) : 0;
   document.getElementById('cards').innerHTML = `
-    <div class="card"><div class="num">${active}</div><div class="lbl">Хийгдээгүй</div></div>
-    <div class="card"><div class="num">${highPrio}</div><div class="lbl">Өндөр чухал</div></div>
-    <div class="card"><div class="num">${personal}</div><div class="lbl">Хувийн</div></div>
-    <div class="card"><div class="num">${work}</div><div class="lbl">Ажлын</div></div>
+    <div class="card"><div class="num">${active}</div><div class="lbl">Active</div></div>
+    <div class="card"><div class="num">${highPrio}</div><div class="lbl">High priority</div></div>
+    <div class="card"><div class="num">${personal}</div><div class="lbl">Personal</div></div>
+    <div class="card"><div class="num">${work}</div><div class="lbl">Work</div></div>
     <div class="card">
-      <div class="num">${pct}%</div><div class="lbl">Гүйцэтгэл</div>
+      <div class="num">${pct}%</div><div class="lbl">Completion</div>
       <div class="progress"><span style="width:${pct}%"></span></div>
     </div>`;
 
@@ -86,7 +86,7 @@ requireAuth('home', async (user) => {
       bar.className = 'agenda-bar ' + (t.category === 'work' ? 'work' : '') + (t.kind === 'meeting' ? ' meeting' : '');
       const time = document.createElement('div');
       time.className = 'agenda-time' + (t.due_time ? '' : ' allday');
-      time.innerText = t.due_time ? formatTime(t.due_time) : 'Өдөржин';
+      time.innerText = t.due_time ? formatTime(t.due_time) : 'All day';
       const body = document.createElement('div');
       body.className = 'agenda-body';
       const ttl = document.createElement('div');
@@ -94,7 +94,7 @@ requireAuth('home', async (user) => {
       ttl.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
       const meta = document.createElement('div');
       meta.className = 'agenda-meta';
-      const bits = [t.category === 'work' ? 'Ажил' : 'Хувийн'];
+      const bits = [t.category === 'work' ? 'Work' : 'Personal'];
       if (t.assignee) bits.push('👤 ' + t.assignee);
       meta.innerText = bits.join(' · ');
       body.append(ttl, meta);
@@ -104,7 +104,7 @@ requireAuth('home', async (user) => {
   }
 
   // ----- Долоо хоногийн жижиг харагдац -----
-  const WEEKDAYS = ['Ня','Да','Мя','Лха','Пүр','Ба','Бя'];
+  const WEEKDAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   function startOfWeek(d) {
     const x = new Date(d); x.setHours(0,0,0,0);
     const day = (x.getDay() + 6) % 7;
@@ -157,14 +157,14 @@ requireAuth('home', async (user) => {
   const boardCatBar = document.getElementById('board-cat-bar');
   let boardCat = 'all';
   const COLUMNS = [
-    { key: 'todo',  label: 'Эхлээгүй' },
-    { key: 'doing', label: 'Явц дээр' },
-    { key: 'done',  label: 'Дууссан' }
+    { key: 'todo',  label: 'Not started' },
+    { key: 'doing', label: 'In progress' },
+    { key: 'done',  label: 'Done' }
   ];
 
   function renderBoardCatBar() {
     boardCatBar.innerHTML = '';
-    [['all','Бүгд'], ['personal','Хувийн'], ['work','Ажил']].forEach(([v, label]) => {
+    [['all','All'], ['personal','Personal'], ['work','Work']].forEach(([v, label]) => {
       const chip = document.createElement('div');
       chip.className = 'folder-chip' + (boardCat === v ? ' active' : '');
       chip.innerText = label;
@@ -207,7 +207,7 @@ requireAuth('home', async (user) => {
         meta.className = 'bc-meta';
         const catTag = document.createElement('span');
         catTag.className = 'tag ' + (t.category === 'work' ? 'work' : 'personal');
-        catTag.innerText = t.category === 'work' ? 'Ажил' : 'Хувийн';
+        catTag.innerText = t.category === 'work' ? 'Work' : 'Personal';
         meta.appendChild(catTag);
         if (t.due_date) {
           const d = document.createElement('span');
@@ -216,23 +216,8 @@ requireAuth('home', async (user) => {
           meta.appendChild(d);
         }
 
-        // Dropdown-оор төлөв солих
-        const sel = document.createElement('select');
-        sel.className = 'bc-status-select';
-        sel.innerHTML = `
-          <option value="todo">Эхлээгүй</option>
-          <option value="doing">Явц дээр</option>
-          <option value="done">Дууссан</option>`;
-        sel.value = col.key;
-        sel.onchange = async () => {
-          const next = sel.value;
-          await db.from('todos').update({
-            status: next, is_completed: next === 'done'
-          }).eq('id', t.id);
-          // Локал жагсаалтыг шинэчлээд board дахин зурах
-          t.status = next; t.is_completed = (next === 'done');
-          renderBoard();
-        };
+        // Unified status dropdown
+        const sel = buildStatusSelect(t, renderBoard);
 
         card.append(title, meta, sel);
         colEl.appendChild(card);

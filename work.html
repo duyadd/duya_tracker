@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Ажил — Төлөвлөгөө</title>
+<title>Work — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
@@ -12,13 +12,13 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Ажлын даалгавар</h2>
-  <p class="subtitle">Төслийн фолдероор ангилсан</p>
+  <h2>Work tasks</h2>
+  <p class="subtitle">Organized by project folder</p>
 
   <div class="folder-bar" id="folder-bar"></div>
 
   <ul id="task-list"></ul>
-  <div class="empty hidden" id="empty">Даалгавар алга. ➕ Нэмэх хуудаснаас нэмнэ үү.</div>
+  <div class="empty hidden" id="empty">No tasks. Add one from the ➕ Add Task page.</div>
 </div>
 
 <script src="app.js"></script>
@@ -47,18 +47,18 @@ requireAuth('work', (user) => {
     if (activeFolder === 'all') {
       const allChip = document.createElement('div');
       allChip.className = 'folder-chip active';
-      allChip.innerText = 'Бүх даалгавар';
+      allChip.innerText = 'All tasks';
       folderBar.appendChild(allChip);
     } else {
       const cur = folders.find(f => String(f.id) === String(activeFolder));
       const chip = document.createElement('div');
       chip.className = 'folder-chip active';
-      chip.innerText = '📁 ' + (cur ? cur.name : 'Фолдер');
+      chip.innerText = '📁 ' + (cur ? cur.name : 'Folder');
       folderBar.appendChild(chip);
 
       const allLink = document.createElement('div');
       allLink.className = 'folder-chip';
-      allLink.innerText = '← Бүгд';
+      allLink.innerText = '← All';
       allLink.onclick = () => { activeFolder = 'all'; renderFolders(); loadTasks(); };
       folderBar.appendChild(allLink);
 
@@ -66,9 +66,9 @@ requireAuth('work', (user) => {
       if (cur) {
         const del = document.createElement('div');
         del.className = 'folder-chip';
-        del.innerText = '🗑 Устгах';
+        del.innerText = '🗑 Delete';
         del.onclick = async () => {
-          if (!confirm(`"${cur.name}" фолдерыг устгах уу? (доторх даалгаврууд устахгүй, зүгээр фолдергүй болно)`)) return;
+          if (!confirm(`"${cur.name}" — delete this folder? (its tasks stay, just become folderless)`)) return;
           await db.from('folders').delete().eq('id', cur.id);
           activeFolder = 'all';
           loadFolders(); loadTasks();
@@ -79,9 +79,9 @@ requireAuth('work', (user) => {
 
     const addBtn = document.createElement('button');
     addBtn.className = 'add-folder';
-    addBtn.innerText = '+ Фолдер';
+    addBtn.innerText = '+ Folder';
     addBtn.onclick = async () => {
-      const name = prompt('Шинэ фолдерын нэр:');
+      const name = prompt('New folder name:');
       if (!name || !name.trim()) return;
       await db.from('folders').insert([{ name: name.trim(), category: CATEGORY }]);
       loadFolders();

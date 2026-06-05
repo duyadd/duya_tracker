@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Нэмэх — Төлөвлөгөө</title>
+<title>Add — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
@@ -12,74 +12,74 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Шинэ даалгавар</h2>
-  <p class="subtitle">Бүх дэлгэрэнгүйг нэг дороос оруулна уу</p>
+  <h2>New task</h2>
+  <p class="subtitle">Enter all the details in one place</p>
 
   <div class="add-card">
     <div id="msg" class="msg"></div>
 
-    <label>Гарчиг *</label>
-    <input type="text" id="f-title" placeholder="Юу хийх вэ?">
+    <label>Title *</label>
+    <input type="text" id="f-title" placeholder="What needs doing?">
 
-    <label>Тайлбар</label>
-    <textarea id="f-desc" rows="3" placeholder="Дэлгэрэнгүй тайлбар (заавал биш)"
+    <label>Description</label>
+    <textarea id="f-desc" rows="3" placeholder="Detailed description (optional)"
       style="resize:vertical;"></textarea>
 
     <div class="form-grid">
       <div>
-        <label>Ангилал</label>
+        <label>Category</label>
         <select id="f-category">
-          <option value="personal">👤 Хувийн</option>
-          <option value="work">💼 Ажил</option>
+          <option value="personal">👤 Personal</option>
+          <option value="work">💼 Work</option>
         </select>
       </div>
       <div>
-        <label>Фолдер</label>
-        <select id="f-folder"><option value="">— Фолдергүй —</option></select>
+        <label>Folder</label>
+        <select id="f-folder"><option value="">— No folder —</option></select>
       </div>
       <div>
-        <label>Төрөл</label>
+        <label>Type</label>
         <select id="f-kind">
-          <option value="task">Даалгавар</option>
-          <option value="meeting">Уулзалт 👥</option>
+          <option value="task">Task</option>
+          <option value="meeting">Meeting 👥</option>
         </select>
       </div>
       <div>
-        <label>Чухал зэрэг</label>
+        <label>Priority</label>
         <select id="f-priority">
-          <option value="0">Энгийн</option>
-          <option value="1">Дунд ⚑</option>
-          <option value="2">Өндөр ⚑</option>
+          <option value="0">Normal</option>
+          <option value="1">Medium ⚑</option>
+          <option value="2">High ⚑</option>
         </select>
       </div>
       <div>
-        <label>Огноо</label>
-        <input type="text" id="f-date" placeholder="Сонгох">
+        <label>Date</label>
+        <input type="text" id="f-date" placeholder="Pick a date">
       </div>
       <div>
-        <label>Цаг</label>
+        <label>Time</label>
         <input type="time" id="f-time">
       </div>
       <div>
-        <label>Төлөв</label>
+        <label>Status</label>
         <select id="f-status">
-          <option value="todo">Эхлээгүй</option>
-          <option value="doing">Явц дээр</option>
-          <option value="done">Дууссан</option>
+          <option value="todo">Not started</option>
+          <option value="doing">In progress</option>
+          <option value="done">Done</option>
         </select>
       </div>
       <div>
-        <label>Хариуцах хүн</label>
-        <input type="text" id="f-assignee" placeholder="Нэр (заавал биш)">
+        <label>Assigned to</label>
+        <input type="text" id="f-assignee" placeholder="Name (optional)">
       </div>
     </div>
 
-    <button class="btn-primary" id="f-add" style="margin-top:8px;">Даалгавар нэмэх</button>
+    <button class="btn-primary" id="f-add" style="margin-top:8px;">Add task</button>
   </div>
 
-  <div class="section-title">Саяхан нэмсэн</div>
+  <div class="section-title">Recently added</div>
   <ul id="recent-list"></ul>
-  <div class="empty hidden" id="recent-empty">Одоохондоо нэмсэн зүйл алга</div>
+  <div class="empty hidden" id="recent-empty">Nothing added yet</div>
 </div>
 
 <script src="app.js"></script>
@@ -116,7 +116,7 @@ requireAuth('add', (user) => {
   function renderFolderOptions() {
     const cat = fCategory.value;
     const relevant = folders.filter(f => (f.category || 'work') === cat);
-    fFolder.innerHTML = '<option value="">— Фолдергүй —</option>';
+    fFolder.innerHTML = '<option value="">— No folder —</option>';
     relevant.forEach(f => {
       const o = document.createElement('option');
       o.value = f.id; o.innerText = '📁 ' + f.name;
@@ -128,7 +128,7 @@ requireAuth('add', (user) => {
   // ----- Нэмэх -----
   document.getElementById('f-add').onclick = async () => {
     const title = fTitle.value.trim();
-    if (!title) { showMsg('Гарчиг оруулна уу.', 'error'); fTitle.focus(); return; }
+    if (!title) { showMsg('Please enter a title.', 'error'); fTitle.focus(); return; }
     const st = fStatus.value;
     const { data, error } = await db.from('todos').insert([{
       title,
@@ -139,13 +139,14 @@ requireAuth('add', (user) => {
       priority: parseInt(fPriority.value, 10),
       due_date: fDate.value || null,
       due_time: fTime.value || null,
+      assignee: fAssignee.value.trim() || null,
       status: st,
       is_completed: st === 'done'
     }]).select();
 
-    if (error) { showMsg('Алдаа: ' + error.message, 'error'); return; }
+    if (error) { showMsg('Error: ' + error.message, 'error'); return; }
 
-    showMsg('✓ "' + title + '" нэмэгдлээ.', 'info');
+    showMsg('✓ "' + title + '" added.', 'info');
     if (data && data[0]) recentIds.unshift(data[0].id);
     // Формыг цэвэрлэх (ангилал, фолдер хэвээр үлдээж дараалан нэмэхэд хялбар)
     fTitle.value = ''; fDesc.value = ''; fTime.value = '';

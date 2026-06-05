@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Хуваарь — Төлөвлөгөө</title>
+<title>Schedule — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
@@ -12,14 +12,14 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Долоо хоногийн хуваарь</h2>
-  <p class="subtitle">Огноо, цаг бүхий даалгавар, уулзалтууд</p>
+  <h2>Weekly schedule</h2>
+  <p class="subtitle">Tasks and meetings with a date and time</p>
 
   <div class="cal-head">
-    <button id="prev">‹ Өмнөх</button>
+    <button id="prev">‹ Prev</button>
     <span class="range" id="range"></span>
-    <button id="next">Дараах ›</button>
-    <button id="today-btn">Өнөөдөр</button>
+    <button id="next">Next ›</button>
+    <button id="today-btn">Today</button>
   </div>
 
   <div class="week-grid" id="grid"></div>
@@ -30,7 +30,7 @@
 requireAuth('calendar', (user) => {
   const grid = document.getElementById('grid');
   const rangeEl = document.getElementById('range');
-  const WEEKDAYS = ['Ня', 'Да', 'Мя', 'Лха', 'Пүр', 'Ба', 'Бя'];
+  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Долоо хоногийн эхлэл (Даваа гараг)
   let anchor = new Date();
@@ -56,8 +56,8 @@ requireAuth('calendar', (user) => {
     }
     const startStr = ymd(days[0]);
     const endStr = ymd(days[6]);
-    rangeEl.innerText = days[0].toLocaleDateString('mn-MN', {month:'short', day:'numeric'})
-      + ' – ' + days[6].toLocaleDateString('mn-MN', {month:'short', day:'numeric'});
+    rangeEl.innerText = days[0].toLocaleDateString('en-US', {month:'short', day:'numeric'})
+      + ' – ' + days[6].toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
     // Энэ долоо хоногийн огноотой зүйлсийг татах
     const { data } = await db.from('todos').select('*')
@@ -85,7 +85,7 @@ requireAuth('calendar', (user) => {
           + (t.is_completed ? ' completed' : '');
         const timeStr = t.due_time ? formatTime(t.due_time) : '';
         item.innerHTML = `${timeStr ? `<div class="t">${timeStr}</div>` : ''}<div class="ttl">${(t.kind==='meeting'?'👥 ':'')}${escapeHtml(t.title)}</div>`;
-        item.title = (t.assignee ? 'Хариуцагч: ' + t.assignee : '') ;
+        item.title = (t.assignee ? 'Assigned to: ' + t.assignee : '') ;
         item.onclick = () => { window.location.href = (t.category === 'work' ? 'work.html' : 'personal.html'); };
         col.appendChild(item);
       });

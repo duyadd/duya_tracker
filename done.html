@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
-<title>Дууссан — Төлөвлөгөө</title>
+<title>Done — Planner</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
@@ -12,14 +12,14 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Дууссан даалгавар</h2>
-  <p class="subtitle">Биелүүлсэн ажлуудын түүх</p>
+  <h2>Completed tasks</h2>
+  <p class="subtitle">History of finished tasks</p>
 
   <div class="folder-bar" id="cat-bar"></div>
   <div class="folder-bar" id="folder-bar"></div>
 
   <ul id="task-list"></ul>
-  <div class="empty hidden" id="empty">Дууссан даалгавар алга</div>
+  <div class="empty hidden" id="empty">No completed tasks yet</div>
 </div>
 
 <script src="app.js"></script>
@@ -42,9 +42,9 @@ requireAuth('done', (user) => {
   function renderCatBar() {
     catBar.innerHTML = '';
     const opts = [
-      { v: 'all', label: 'Бүгд' },
-      { v: 'personal', label: 'Хувийн' },
-      { v: 'work', label: 'Ажил' }
+      { v: 'all', label: 'All' },
+      { v: 'personal', label: 'Personal' },
+      { v: 'work', label: 'Work' }
     ];
     opts.forEach(o => {
       const chip = document.createElement('div');
@@ -70,7 +70,7 @@ requireAuth('done', (user) => {
 
     const allChip = document.createElement('div');
     allChip.className = 'folder-chip' + (activeFolder === 'all' ? ' active' : '');
-    allChip.innerText = 'Бүх фолдер';
+    allChip.innerText = 'All folders';
     allChip.onclick = () => { activeFolder = 'all'; render(); };
     folderBar.appendChild(allChip);
 

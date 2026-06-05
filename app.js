@@ -31,7 +31,7 @@ async function renderNav(active) {
   const burger = document.createElement('button');
   burger.className = 'nav-burger';
   burger.innerHTML = '☰';
-  burger.setAttribute('aria-label', 'Цэс');
+  burger.setAttribute('aria-label', 'Menu');
   document.body.prepend(burger);
 
   // Бүрхүүл (мобайлд цэс нээгдэхэд арын бараан давхарга)
@@ -42,22 +42,22 @@ async function renderNav(active) {
   const nav = document.createElement('div');
   nav.className = 'nav';
   nav.innerHTML = `
-    <span class="brand">✦ Төлөвлөгөө</span>
+    <span class="brand">✦ Planner</span>
     <nav class="nav-links">
-      <a href="index.html" data-page="home">🏠 Нүүр</a>
-      <a href="add.html" data-page="add">➕ Нэмэх</a>
-      <a href="personal.html" data-page="personal">👤 Хувийн</a>
+      <a href="index.html" data-page="home">🏠 Home</a>
+      <a href="add.html" data-page="add">➕ Add Task</a>
+      <a href="personal.html" data-page="personal">👤 Personal</a>
       <div class="nav-sub" id="sub-personal"></div>
-      <a href="work.html" data-page="work">💼 Ажил</a>
+      <a href="work.html" data-page="work">💼 Work</a>
       <div class="nav-sub" id="sub-work"></div>
-      <a href="calendar.html" data-page="calendar">📅 Хуваарь</a>
-      <a href="done.html" data-page="done">✓ Дууссан</a>
+      <a href="calendar.html" data-page="calendar">📅 Schedule</a>
+      <a href="done.html" data-page="done">✓ Done</a>
     </nav>
     <div class="nav-footer">
       <span class="user" id="nav-user"></span>
       <div class="nav-footer-row">
-        <button class="theme-btn" id="theme-btn" title="Сэдэв солих">☀️</button>
-        <button id="nav-logout">Гарах</button>
+        <button class="theme-btn" id="theme-btn" title="Toggle theme">☀️</button>
+        <button id="nav-logout">Sign out</button>
       </div>
     </div>
   `;
@@ -126,7 +126,7 @@ async function requireAuth(activePage, onReady) {
 function formatDate(d) {
   if (!d) return '';
   const date = new Date(d + 'T00:00:00');
-  return date.toLocaleDateString('mn-MN', { month: 'short', day: 'numeric' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 function formatTime(t) {
   if (!t) return '';
@@ -139,10 +139,33 @@ function isOverdue(d, completed) {
 }
 
 // ===== Чухал зэргийн нэр =====
-const PRIORITY_LABELS = { 0: '', 1: 'Дунд', 2: 'Өндөр' };
+const PRIORITY_LABELS = { 0: '', 1: 'Medium', 2: 'High' };
 
-// ===== Явцын төлөв =====
-const STATUS_LABELS = { todo: 'Эхлээгүй', doing: 'Явц дээр', done: 'Дууссан' };
+// ===== Status =====
+const STATUS_LABELS = { todo: 'Not started', doing: 'In progress', done: 'Done' };
+
+// Нэгдсэн status dropdown — хаа сайгүй ижил харагдана.
+// task: даалгавар, onChange: солигдсоны дараа дуудах callback
+function buildStatusSelect(task, onChange) {
+  const sel = document.createElement('select');
+  sel.className = 'status-select';
+  sel.innerHTML = `
+    <option value="todo">○ Not started</option>
+    <option value="doing">◐ In progress</option>
+    <option value="done">● Done</option>`;
+  sel.value = task.status || (task.is_completed ? 'done' : 'todo');
+  sel.setAttribute('data-status', sel.value);
+  sel.onclick = (e) => e.stopPropagation();
+  sel.onchange = async (e) => {
+    e.stopPropagation();
+    const next = sel.value;
+    sel.setAttribute('data-status', next);
+    await db.from('todos').update({ status: next, is_completed: next === 'done' }).eq('id', task.id);
+    task.status = next; task.is_completed = (next === 'done');
+    if (onChange) onChange();
+  };
+  return sel;
+}
 
 // ===== Flatpickr огноо сонгогч холбох (цаг заавал биш) =====
 // el — input элемент. Flatpickr ачаалагдсан бол гоё календарь, үгүй бол уугуул input.
@@ -211,27 +234,12 @@ function buildTaskLi(task, onChange) {
     const meta = document.createElement('div');
     meta.className = 'task-meta';
 
-    // Төлөв (дарахад эхлээгүй -> явц дээр -> дууссан -> эхлээгүй)
-    const statusTag = document.createElement('span');
-    const st = task.status || (task.is_completed ? 'done' : 'todo');
-    statusTag.className = 'tag status status-' + st;
-    statusTag.innerText = STATUS_LABELS[st];
-    statusTag.title = 'Дарж төлөв солих';
-    statusTag.style.cursor = 'pointer';
-    statusTag.onclick = async () => {
-      const order = ['todo', 'doing', 'done'];
-      const next = order[(order.indexOf(st) + 1) % 3];
-      await db.from('todos').update({
-        status: next,
-        is_completed: next === 'done'
-      }).eq('id', task.id);
-      onChange();
-    };
-    meta.appendChild(statusTag);
+    // Төлөв — нэгдсэн dropdown
+    meta.appendChild(buildStatusSelect(task, onChange));
 
     const catTag = document.createElement('span');
     catTag.className = 'tag ' + (task.category === 'work' ? 'work' : 'personal');
-    catTag.innerText = task.category === 'work' ? 'Ажил' : 'Хувийн';
+    catTag.innerText = task.category === 'work' ? 'Work' : 'Personal';
     meta.appendChild(catTag);
     if (task.priority > 0) {
       const pTag = document.createElement('span');
@@ -259,13 +267,13 @@ function buildTaskLi(task, onChange) {
     const edit = document.createElement('button');
     edit.className = 'edit-btn';
     edit.innerText = '✎';
-    edit.title = 'Засах';
+    edit.title = 'Edit';
     edit.onclick = renderEdit;
 
     const del = document.createElement('button');
     del.className = 'del-btn';
     del.innerText = '✕';
-    del.title = 'Устгах';
+    del.title = 'Delete';
     del.onclick = async () => {
       await db.from('todos').delete().eq('id', task.id);
       onChange();
@@ -283,11 +291,11 @@ function buildTaskLi(task, onChange) {
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.value = task.title;
-    titleInput.placeholder = 'Гарчиг';
+    titleInput.placeholder = 'Title';
 
     const descInput = document.createElement('textarea');
     descInput.value = task.description || '';
-    descInput.placeholder = 'Тайлбар (заавал биш)';
+    descInput.placeholder = 'Description (optional)';
     descInput.rows = 3;
     descInput.style.cssText = 'width:100%;padding:11px 13px;background:var(--bg);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px;font-family:inherit;margin-bottom:8px;resize:vertical;';
 
@@ -296,44 +304,44 @@ function buildTaskLi(task, onChange) {
 
     const dueInput = document.createElement('input');
     dueInput.type = 'text';
-    dueInput.placeholder = 'Огноо';
+    dueInput.placeholder = 'Date';
     dueInput.style.width = '130px';
     if (task.due_date) dueInput.value = task.due_date;
 
     const timeInput = document.createElement('input');
     timeInput.type = 'time';
-    timeInput.title = 'Цаг (заавал биш)';
+    timeInput.title = 'Time (optional)';
     if (task.due_time) timeInput.value = formatTime(task.due_time);
 
     const catSelect = document.createElement('select');
     catSelect.innerHTML = `
-      <option value="personal">Хувийн</option>
-      <option value="work">Ажил</option>`;
+      <option value="personal">Personal</option>
+      <option value="work">Work</option>`;
     catSelect.value = task.category === 'work' ? 'work' : 'personal';
 
     const prioSelect = document.createElement('select');
     prioSelect.innerHTML = `
-      <option value="0">Энгийн</option>
-      <option value="1">Дунд ⚑</option>
-      <option value="2">Өндөр ⚑</option>`;
+      <option value="0">Normal</option>
+      <option value="1">Medium ⚑</option>
+      <option value="2">High ⚑</option>`;
     prioSelect.value = String(task.priority || 0);
 
     const statusSelect = document.createElement('select');
     statusSelect.innerHTML = `
-      <option value="todo">Эхлээгүй</option>
-      <option value="doing">Явц дээр</option>
-      <option value="done">Дууссан</option>`;
+      <option value="todo">Not started</option>
+      <option value="doing">In progress</option>
+      <option value="done">Done</option>`;
     statusSelect.value = task.status || (task.is_completed ? 'done' : 'todo');
 
     const kindSelect = document.createElement('select');
     kindSelect.innerHTML = `
-      <option value="task">Даалгавар</option>
-      <option value="meeting">Уулзалт 👥</option>`;
+      <option value="task">Task</option>
+      <option value="meeting">Meeting 👥</option>`;
     kindSelect.value = task.kind === 'meeting' ? 'meeting' : 'task';
 
     const assigneeInput = document.createElement('input');
     assigneeInput.type = 'text';
-    assigneeInput.placeholder = 'Хариуцах хүн (заавал биш)';
+    assigneeInput.placeholder = 'Assigned to (optional)';
     assigneeInput.value = task.assignee || '';
     assigneeInput.style.cssText = 'margin-bottom:8px;';
 
@@ -341,7 +349,7 @@ function buildTaskLi(task, onChange) {
     actions.className = 'edit-actions';
     const save = document.createElement('button');
     save.className = 'btn-save';
-    save.innerText = 'Хадгалах';
+    save.innerText = 'Save';
     save.onclick = async () => {
       const newTitle = titleInput.value.trim();
       if (!newTitle) { titleInput.focus(); return; }
@@ -366,7 +374,7 @@ function buildTaskLi(task, onChange) {
     };
     const cancel = document.createElement('button');
     cancel.className = 'btn-cancel';
-    cancel.innerText = 'Болих';
+    cancel.innerText = 'Cancel';
     cancel.onclick = renderView;
     actions.append(save, cancel);
 
