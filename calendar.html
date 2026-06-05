@@ -12,7 +12,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h2>Weekly schedule</h2>
+  <h2 id="cal-title">Weekly schedule</h2>
   <p class="subtitle">Tasks and meetings with a date and time</p>
 
   <div class="cal-head">
@@ -20,51 +20,79 @@
     <span class="range" id="range"></span>
     <button id="next">Next ›</button>
     <button id="today-btn">Today</button>
+    <div class="view-toggle cal-view-toggle">
+      <button id="btn-week" class="active">Week</button>
+      <button id="btn-month">Month</button>
+    </div>
   </div>
 
-  <div class="week-grid" id="grid"></div>
+  <div id="week-container">
+    <div class="week-grid" id="grid"></div>
+  </div>
+
+  <div id="month-container" class="hidden">
+    <div class="month-head-row" id="month-head"></div>
+    <div class="month-grid" id="month-grid"></div>
+  </div>
 </div>
 
 <script src="app.js"></script>
 <script>
 requireAuth('calendar', (user) => {
-  const grid = document.getElementById('grid');
-  const rangeEl = document.getElementById('range');
-  const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const grid        = document.getElementById('grid');
+  const rangeEl     = document.getElementById('range');
+  const WEEKDAYS    = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DAYNAMES    = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
-  // Долоо хоногийн эхлэл (Даваа гараг)
-  let anchor = new Date();
-  anchor.setHours(0,0,0,0);
+  let anchor   = new Date(); anchor.setHours(0,0,0,0);
+  let viewMode = 'week';
 
   function startOfWeek(d) {
     const x = new Date(d);
-    const day = (x.getDay() + 6) % 7; // Даваа = 0
-    x.setDate(x.getDate() - day);
+    x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
     return x;
   }
   function ymd(d) {
-    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    return d.getFullYear() + '-'
+      + String(d.getMonth()+1).padStart(2,'0') + '-'
+      + String(d.getDate()).padStart(2,'0');
+  }
+  function escapeHtml(s) {
+    const div = document.createElement('div'); div.innerText = s; return div.innerHTML;
+  }
+
+  function setView(v) {
+    viewMode = v;
+    document.getElementById('btn-week').classList.toggle('active', v === 'week');
+    document.getElementById('btn-month').classList.toggle('active', v === 'month');
+    render();
   }
 
   async function render() {
+    if (viewMode === 'week') await renderWeek();
+    else await renderMonth();
+  }
+
+  async function renderWeek() {
+    document.getElementById('week-container').classList.remove('hidden');
+    document.getElementById('month-container').classList.add('hidden');
+    document.getElementById('cal-title').innerText = 'Weekly schedule';
+
     const start = startOfWeek(anchor);
     const days = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      days.push(d);
+      const d = new Date(start); d.setDate(start.getDate() + i); days.push(d);
     }
-    const startStr = ymd(days[0]);
-    const endStr = ymd(days[6]);
-    rangeEl.innerText = days[0].toLocaleDateString('en-US', {month:'short', day:'numeric'})
-      + ' – ' + days[6].toLocaleDateString('en-US', {month:'short', day:'numeric'});
+    rangeEl.innerText =
+      days[0].toLocaleDateString('en-US', {month:'short', day:'numeric'})
+      + ' – ' +
+      days[6].toLocaleDateString('en-US', {month:'short', day:'numeric'});
 
-    // Энэ долоо хоногийн огноотой зүйлсийг татах
     const { data } = await db.from('todos').select('*')
-      .gte('due_date', startStr).lte('due_date', endStr);
+      .gte('due_date', ymd(days[0])).lte('due_date', ymd(days[6]));
     const items = data || [];
-
     const todayStr = ymd(new Date());
+
     grid.innerHTML = '';
     days.forEach((d, idx) => {
       const dStr = ymd(d);
@@ -75,31 +103,115 @@ requireAuth('calendar', (user) => {
       head.innerHTML = `${WEEKDAYS[(idx+1)%7]}<div class="dnum">${d.getDate()}</div>`;
       col.appendChild(head);
 
-      // Тухайн өдрийн зүйлс, цагаар эрэмбэлсэн
-      const dayItems = items.filter(t => t.due_date === dStr)
-        .sort((a,b) => (a.due_time||'99').localeCompare(b.due_time||'99'));
-      dayItems.forEach(t => {
-        const item = document.createElement('div');
-        item.className = 'cal-item ' + (t.category === 'work' ? 'work' : 'personal')
-          + (t.kind === 'meeting' ? ' meeting' : '')
-          + (t.is_completed ? ' completed' : '');
-        const timeStr = t.due_time ? formatTime(t.due_time) : '';
-        item.innerHTML = `${timeStr ? `<div class="t">${timeStr}</div>` : ''}<div class="ttl">${(t.kind==='meeting'?'👥 ':'')}${escapeHtml(t.title)}</div>`;
-        item.title = (t.assignee ? 'Assigned to: ' + t.assignee : '') ;
-        item.onclick = () => { window.location.href = (t.category === 'work' ? 'work.html' : 'personal.html'); };
-        col.appendChild(item);
-      });
+      items.filter(t => t.due_date === dStr)
+        .sort((a,b) => (a.due_time||'99').localeCompare(b.due_time||'99'))
+        .forEach(t => {
+          const item = document.createElement('div');
+          item.className = 'cal-item '
+            + (t.category === 'work' ? 'work' : 'personal')
+            + (t.kind === 'meeting' ? ' meeting' : '')
+            + (t.is_completed ? ' completed' : '');
+          const timeStr = t.due_time ? formatTime(t.due_time) : '';
+          item.innerHTML = (timeStr ? `<div class="t">${timeStr}</div>` : '')
+            + `<div class="ttl">${t.kind==='meeting'?'👥 ':''}${escapeHtml(t.title)}</div>`;
+          item.title = t.assignee ? 'Assigned to: ' + t.assignee : '';
+          item.onclick = () => { window.location.href = t.category === 'work' ? 'work.html' : 'personal.html'; };
+          col.appendChild(item);
+        });
       grid.appendChild(col);
     });
   }
 
-  function escapeHtml(s) {
-    const div = document.createElement('div'); div.innerText = s; return div.innerHTML;
+  async function renderMonth() {
+    document.getElementById('week-container').classList.add('hidden');
+    document.getElementById('month-container').classList.remove('hidden');
+    document.getElementById('cal-title').innerText = 'Monthly schedule';
+
+    const year  = anchor.getFullYear();
+    const month = anchor.getMonth();
+    rangeEl.innerText = anchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const firstDay = new Date(year, month, 1);
+    const startDay = new Date(firstDay);
+    startDay.setDate(startDay.getDate() - ((startDay.getDay() + 6) % 7));
+
+    const lastDay = new Date(year, month + 1, 0);
+    const endDay  = new Date(lastDay);
+    const edow = (endDay.getDay() + 6) % 7;
+    if (edow < 6) endDay.setDate(endDay.getDate() + (6 - edow));
+
+    const { data } = await db.from('todos').select('*')
+      .gte('due_date', ymd(startDay)).lte('due_date', ymd(endDay));
+    const items    = data || [];
+    const todayStr = ymd(new Date());
+
+    const monthHead = document.getElementById('month-head');
+    monthHead.innerHTML = '';
+    DAYNAMES.forEach(name => {
+      const cell = document.createElement('div');
+      cell.className  = 'month-head-cell';
+      cell.innerText  = name;
+      monthHead.appendChild(cell);
+    });
+
+    const monthGrid = document.getElementById('month-grid');
+    monthGrid.innerHTML = '';
+    const cur = new Date(startDay);
+    while (cur <= endDay) {
+      const dStr = ymd(cur);
+      const cell = document.createElement('div');
+      cell.className = 'month-cell'
+        + (dStr === todayStr   ? ' today'       : '')
+        + (cur.getMonth() !== month ? ' other-month' : '');
+
+      const dayNum = document.createElement('div');
+      dayNum.className = 'mday';
+      dayNum.innerText = cur.getDate();
+      cell.appendChild(dayNum);
+
+      const dayItems = items.filter(t => t.due_date === dStr)
+        .sort((a,b) => (a.due_time||'99').localeCompare(b.due_time||'99'));
+
+      const MAX = 3;
+      dayItems.slice(0, MAX).forEach(t => {
+        const item = document.createElement('div');
+        item.className = 'month-cal-item '
+          + (t.category === 'work' ? 'work' : 'personal')
+          + (t.kind === 'meeting' ? ' meeting' : '')
+          + (t.is_completed ? ' completed' : '');
+        item.innerText = (t.kind === 'meeting' ? '👥 ' : '') + t.title;
+        item.title     = t.title + (t.due_time ? ' · ' + formatTime(t.due_time) : '');
+        item.onclick   = () => { window.location.href = t.category === 'work' ? 'work.html' : 'personal.html'; };
+        cell.appendChild(item);
+      });
+      if (dayItems.length > MAX) {
+        const more = document.createElement('div');
+        more.className = 'month-more';
+        more.innerText = '+' + (dayItems.length - MAX) + ' more';
+        cell.appendChild(more);
+      }
+
+      monthGrid.appendChild(cell);
+      cur.setDate(cur.getDate() + 1);
+    }
   }
 
-  document.getElementById('prev').onclick = () => { anchor.setDate(anchor.getDate()-7); render(); };
-  document.getElementById('next').onclick = () => { anchor.setDate(anchor.getDate()+7); render(); };
-  document.getElementById('today-btn').onclick = () => { anchor = new Date(); anchor.setHours(0,0,0,0); render(); };
+  document.getElementById('btn-week').onclick  = () => setView('week');
+  document.getElementById('btn-month').onclick = () => setView('month');
+
+  document.getElementById('prev').onclick = () => {
+    if (viewMode === 'week') anchor.setDate(anchor.getDate() - 7);
+    else { anchor.setDate(1); anchor.setMonth(anchor.getMonth() - 1); }
+    render();
+  };
+  document.getElementById('next').onclick = () => {
+    if (viewMode === 'week') anchor.setDate(anchor.getDate() + 7);
+    else { anchor.setDate(1); anchor.setMonth(anchor.getMonth() + 1); }
+    render();
+  };
+  document.getElementById('today-btn').onclick = () => {
+    anchor = new Date(); anchor.setHours(0,0,0,0); render();
+  };
 
   render();
 });

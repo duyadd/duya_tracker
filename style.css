@@ -339,13 +339,36 @@ li.task:hover { border-color: var(--surface-3); transform: translateX(2px); box-
 .day-head { font-size: 11px; color: var(--muted); text-align: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-soft); margin-bottom: 9px; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; }
 .day-head .dnum { font-family: 'Fraunces', serif; font-size: 19px; color: var(--text); font-weight: 600; margin-top: 2px; }
 .day-col.today .dnum { color: var(--accent); }
-.cal-item { background: var(--surface-3); border-left: 3px solid var(--personal); border-radius: 6px; padding: 7px 9px; margin-bottom: 6px; font-size: 12px; cursor: pointer; transition: transform 0.15s var(--ease); }
+.cal-item { background: var(--surface-3); border-left: 4px solid var(--personal); border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; font-size: 13px; cursor: pointer; transition: transform 0.15s var(--ease); }
 .cal-item:hover { transform: translateX(2px); }
 .cal-item.work { border-left-color: var(--work); }
 .cal-item.meeting { border-left-color: var(--done); }
 .cal-item .t { color: var(--muted); font-size: 11px; font-weight: 500; }
 .cal-item .ttl { color: var(--text); word-break: break-word; margin-top: 1px; }
 .cal-item.completed .ttl { text-decoration: line-through; color: var(--muted-2); }
+
+/* ===== Monthly calendar ===== */
+.cal-head .view-toggle { margin-bottom: 0; margin-left: auto; }
+.month-head-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 4px; }
+.month-head-cell { font-size: 11px; color: var(--muted); text-align: center; padding: 6px 4px; font-weight: 500; letter-spacing: 0.4px; text-transform: uppercase; }
+.month-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.month-cell { background: linear-gradient(165deg, var(--surface), var(--surface-2)); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; min-height: 100px; }
+.month-cell.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-glow); }
+.month-cell.other-month { opacity: 0.35; }
+.month-cell .mday { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 600; margin-bottom: 5px; }
+.month-cell.today .mday { color: var(--accent); }
+.month-cal-item { background: var(--surface-3); border-left: 4px solid var(--personal); border-radius: 4px; padding: 3px 7px; margin-bottom: 3px; font-size: 11px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: transform 0.12s var(--ease); }
+.month-cal-item:hover { transform: translateX(2px); }
+.month-cal-item.work { border-left-color: var(--work); }
+.month-cal-item.meeting { border-left-color: var(--done); }
+.month-cal-item.completed { opacity: 0.5; text-decoration: line-through; }
+.month-more { font-size: 10px; color: var(--muted-2); padding: 2px 4px; font-weight: 500; }
+@media (max-width: 760px) {
+  .month-cell { min-height: 68px; padding: 5px; }
+  .month-cell .mday { font-size: 13px; }
+  .month-cal-item { font-size: 10px; }
+  .cal-head .view-toggle { margin-left: 0; }
+}
 
 /* ===== Home view toggle ===== */
 .view-toggle { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; }
