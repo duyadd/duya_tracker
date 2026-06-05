@@ -15,12 +15,34 @@
   <h1>Миний Төлөвлөгөө</h1>
   <p class="sub" id="sub">Нэвтэрч орно уу</p>
   <div id="msg" class="msg"></div>
-  <label>Имэйл</label>
-  <input type="email" id="email" placeholder="name@example.com" autocomplete="username">
-  <label>Нууц үг</label>
-  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-  <button class="btn-primary" id="auth-btn">Нэвтрэх</button>
-  <div class="switch-link"><span id="switch-text">Бүртгэлгүй юу?</span> <a id="switch-link">Бүртгүүлэх</a></div>
+
+  <!-- Нэвтрэх / Бүртгүүлэх хэсэг -->
+  <div id="auth-section">
+    <label>Имэйл</label>
+    <input type="email" id="email" placeholder="name@example.com" autocomplete="username">
+    <label>Нууц үг</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    <button class="btn-primary" id="auth-btn">Нэвтрэх</button>
+    <div class="switch-link" style="margin-top:12px;">
+      <a id="forgot-link">Нууц үгээ мартсан уу?</a>
+    </div>
+    <div class="switch-link"><span id="switch-text">Бүртгэлгүй юу?</span> <a id="switch-link">Бүртгүүлэх</a></div>
+  </div>
+
+  <!-- Нууц үг мартсан: имэйл оруулах хэсэг -->
+  <div id="forgot-section" class="hidden">
+    <label>Имэйл</label>
+    <input type="email" id="forgot-email" placeholder="name@example.com" autocomplete="username">
+    <button class="btn-primary" id="forgot-btn">Сэргээх линк илгээх</button>
+    <div class="switch-link"><a id="back-to-login">‹ Нэвтрэх рүү буцах</a></div>
+  </div>
+
+  <!-- Шинэ нууц үг тохируулах хэсэг (recovery линкээр ирэхэд) -->
+  <div id="reset-section" class="hidden">
+    <label>Шинэ нууц үг</label>
+    <input type="password" id="new-password" placeholder="••••••••" autocomplete="new-password">
+    <button class="btn-primary" id="reset-btn">Нууц үг хадгалах</button>
+  </div>
 </div>
 
 <script src="app.js"></script>
@@ -34,13 +56,33 @@
   const switchText = document.getElementById('switch-text');
   const switchLink = document.getElementById('switch-link');
 
-  // Хэрэв аль хэдийн нэвтэрсэн бол нүүр рүү
-  db.auth.getSession().then(({ data: { session } }) => {
-    if (session) window.location.href = 'index.html';
-  });
+  const authSection = document.getElementById('auth-section');
+  const forgotSection = document.getElementById('forgot-section');
+  const resetSection = document.getElementById('reset-section');
 
   function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
 
+  // ===== Recovery линкээр ирсэн эсэхийг шалгах =====
+  // Supabase recovery линк дээр дарахад "PASSWORD_RECOVERY" event ажиллана
+  let isRecovery = false;
+  db.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      isRecovery = true;
+      sub.innerText = 'Шинэ нууц үгээ оруулна уу';
+      authSection.classList.add('hidden');
+      forgotSection.classList.add('hidden');
+      resetSection.classList.remove('hidden');
+    }
+  });
+
+  // Хэрэв аль хэдийн нэвтэрсэн бол нүүр рүү (гэхдээ recovery үед биш)
+  db.auth.getSession().then(({ data: { session } }) => {
+    if (session && !isRecovery && !window.location.hash.includes('type=recovery')) {
+      window.location.href = 'index.html';
+    }
+  });
+
+  // ===== Нэвтрэх / Бүртгүүлэх горим =====
   switchLink.onclick = () => {
     mode = mode === 'login' ? 'signup' : 'login';
     if (mode === 'signup') {
@@ -69,6 +111,46 @@
     btn.disabled = false;
   };
   passEl.addEventListener('keypress', e => { if (e.key === 'Enter') btn.click(); });
+
+  // ===== Нууц үг мартсан =====
+  document.getElementById('forgot-link').onclick = () => {
+    authSection.classList.add('hidden');
+    forgotSection.classList.remove('hidden');
+    sub.innerText = 'Нууц үг сэргээх';
+    showMsg('', '');
+  };
+  document.getElementById('back-to-login').onclick = () => {
+    forgotSection.classList.add('hidden');
+    authSection.classList.remove('hidden');
+    sub.innerText = 'Нэвтэрч орно уу';
+    showMsg('', '');
+  };
+
+  document.getElementById('forgot-btn').onclick = async () => {
+    const email = document.getElementById('forgot-email').value.trim();
+    if (!email) { showMsg('Имэйлээ оруулна уу.', 'error'); return; }
+    const fbtn = document.getElementById('forgot-btn');
+    fbtn.disabled = true;
+    // Recovery линк энэ хуудас руу буцаж ирнэ
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href.split('#')[0]
+    });
+    if (error) showMsg(error.message, 'error');
+    else showMsg('Сэргээх линкийг ' + email + ' хаяг руу илгээлээ. Имэйлээ шалгаад линк дээр дарна уу. (Spam/Junk хавтсыг бас хараарай.)', 'info');
+    fbtn.disabled = false;
+  };
+
+  // ===== Шинэ нууц үг тохируулах =====
+  document.getElementById('reset-btn').onclick = async () => {
+    const newPass = document.getElementById('new-password').value;
+    if (!newPass || newPass.length < 6) { showMsg('Нууц үг дор хаяж 6 тэмдэгт байх ёстой.', 'error'); return; }
+    const rbtn = document.getElementById('reset-btn');
+    rbtn.disabled = true;
+    const { error } = await db.auth.updateUser({ password: newPass });
+    if (error) { showMsg(error.message, 'error'); rbtn.disabled = false; return; }
+    showMsg('Нууц үг амжилттай шинэчлэгдлээ! Нүүр хуудас руу шилжиж байна...', 'info');
+    setTimeout(() => window.location.href = 'index.html', 1500);
+  };
 </script>
 </body>
 </html>
