@@ -25,21 +25,38 @@ function updateThemeBtn() {
 // Хуудас ачаалагдмагц шууд хэрэглэх (анивчихаас сэргийлж эртхэн)
 applyTheme(getTheme());
 
-// ===== Навигаци зурах =====
+// ===== Навигаци зурах (зүүн талын sidebar) =====
 function renderNav(active) {
+  // Мобайл нээх товч
+  const burger = document.createElement('button');
+  burger.className = 'nav-burger';
+  burger.innerHTML = '☰';
+  burger.setAttribute('aria-label', 'Цэс');
+  document.body.prepend(burger);
+
+  // Бүрхүүл (мобайлд цэс нээгдэхэд арын бараан давхарга)
+  const overlay = document.createElement('div');
+  overlay.className = 'nav-overlay';
+  document.body.prepend(overlay);
+
   const nav = document.createElement('div');
   nav.className = 'nav';
   nav.innerHTML = `
     <span class="brand">✦ Төлөвлөгөө</span>
-    <a href="index.html" data-page="home">Нүүр</a>
-    <a href="personal.html" data-page="personal">Хувийн</a>
-    <a href="work.html" data-page="work">Ажил</a>
-    <a href="calendar.html" data-page="calendar">Хуваарь</a>
-    <a href="done.html" data-page="done">Дууссан</a>
-    <span class="spacer"></span>
-    <span class="user" id="nav-user"></span>
-    <button class="theme-btn" id="theme-btn" title="Сэдэв солих">☀️</button>
-    <button id="nav-logout">Гарах</button>
+    <nav class="nav-links">
+      <a href="index.html" data-page="home">🏠 Нүүр</a>
+      <a href="personal.html" data-page="personal">👤 Хувийн</a>
+      <a href="work.html" data-page="work">💼 Ажил</a>
+      <a href="calendar.html" data-page="calendar">📅 Хуваарь</a>
+      <a href="done.html" data-page="done">✓ Дууссан</a>
+    </nav>
+    <div class="nav-footer">
+      <span class="user" id="nav-user"></span>
+      <div class="nav-footer-row">
+        <button class="theme-btn" id="theme-btn" title="Сэдэв солих">☀️</button>
+        <button id="nav-logout">Гарах</button>
+      </div>
+    </div>
   `;
   document.body.prepend(nav);
   const link = nav.querySelector(`a[data-page="${active}"]`);
@@ -47,6 +64,16 @@ function renderNav(active) {
   nav.querySelector('#nav-logout').addEventListener('click', () => db.auth.signOut());
   nav.querySelector('#theme-btn').addEventListener('click', toggleTheme);
   updateThemeBtn();
+
+  // Мобайл нээх/хаах
+  burger.addEventListener('click', () => {
+    nav.classList.toggle('open');
+    overlay.classList.toggle('show');
+  });
+  overlay.addEventListener('click', () => {
+    nav.classList.remove('open');
+    overlay.classList.remove('show');
+  });
 }
 
 // ===== Нэвтрэлт шалгах. Нэвтрээгүй бол auth дэлгэц рүү шилжүүлнэ =====
