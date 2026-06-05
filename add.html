@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="data:;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==">
+<title>Нэмэх — Төлөвлөгөө</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h2>Шинэ даалгавар</h2>
+  <p class="subtitle">Бүх дэлгэрэнгүйг нэг дороос оруулна уу</p>
+
+  <div class="add-card">
+    <div id="msg" class="msg"></div>
+
+    <label>Гарчиг *</label>
+    <input type="text" id="f-title" placeholder="Юу хийх вэ?">
+
+    <label>Тайлбар</label>
+    <textarea id="f-desc" rows="3" placeholder="Дэлгэрэнгүй тайлбар (заавал биш)"
+      style="resize:vertical;"></textarea>
+
+    <div class="form-grid">
+      <div>
+        <label>Ангилал</label>
+        <select id="f-category">
+          <option value="personal">👤 Хувийн</option>
+          <option value="work">💼 Ажил</option>
+        </select>
+      </div>
+      <div>
+        <label>Фолдер</label>
+        <select id="f-folder"><option value="">— Фолдергүй —</option></select>
+      </div>
+      <div>
+        <label>Төрөл</label>
+        <select id="f-kind">
+          <option value="task">Даалгавар</option>
+          <option value="meeting">Уулзалт 👥</option>
+        </select>
+      </div>
+      <div>
+        <label>Чухал зэрэг</label>
+        <select id="f-priority">
+          <option value="0">Энгийн</option>
+          <option value="1">Дунд ⚑</option>
+          <option value="2">Өндөр ⚑</option>
+        </select>
+      </div>
+      <div>
+        <label>Огноо</label>
+        <input type="text" id="f-date" placeholder="Сонгох">
+      </div>
+      <div>
+        <label>Цаг</label>
+        <input type="time" id="f-time">
+      </div>
+      <div>
+        <label>Төлөв</label>
+        <select id="f-status">
+          <option value="todo">Эхлээгүй</option>
+          <option value="doing">Явц дээр</option>
+          <option value="done">Дууссан</option>
+        </select>
+      </div>
+      <div>
+        <label>Хариуцах хүн</label>
+        <input type="text" id="f-assignee" placeholder="Нэр (заавал биш)">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="f-add" style="margin-top:8px;">Даалгавар нэмэх</button>
+  </div>
+
+  <div class="section-title">Саяхан нэмсэн</div>
+  <ul id="recent-list"></ul>
+  <div class="empty hidden" id="recent-empty">Одоохондоо нэмсэн зүйл алга</div>
+</div>
+
+<script src="app.js"></script>
+<script>
+requireAuth('add', (user) => {
+  const fTitle = document.getElementById('f-title');
+  const fDesc = document.getElementById('f-desc');
+  const fCategory = document.getElementById('f-category');
+  const fFolder = document.getElementById('f-folder');
+  const fKind = document.getElementById('f-kind');
+  const fPriority = document.getElementById('f-priority');
+  const fDate = document.getElementById('f-date');
+  const fTime = document.getElementById('f-time');
+  const fStatus = document.getElementById('f-status');
+  const fAssignee = document.getElementById('f-assignee');
+  const msg = document.getElementById('msg');
+  const recentList = document.getElementById('recent-list');
+  const recentEmpty = document.getElementById('recent-empty');
+
+  let folders = [];
+  let recentIds = [];
+
+  // Гоё календарь
+  attachDatePicker(fDate, false);
+
+  function showMsg(t, type) { msg.innerText = t; msg.className = 'msg' + (type ? ' ' + type : ''); }
+
+  // Ангилал солиход тухайн ангиллын фолдеруудыг харуулах
+  async function loadFolders() {
+    const { data } = await db.from('folders').select('*').order('id', { ascending: true });
+    folders = data || [];
+    renderFolderOptions();
+  }
+  function renderFolderOptions() {
+    const cat = fCategory.value;
+    const relevant = folders.filter(f => (f.category || 'work') === cat);
+    fFolder.innerHTML = '<option value="">— Фолдергүй —</option>';
+    relevant.forEach(f => {
+      const o = document.createElement('option');
+      o.value = f.id; o.innerText = '📁 ' + f.name;
+      fFolder.appendChild(o);
+    });
+  }
+  fCategory.onchange = renderFolderOptions;
+
+  // ----- Нэмэх -----
+  document.getElementById('f-add').onclick = async () => {
+    const title = fTitle.value.trim();
+    if (!title) { showMsg('Гарчиг оруулна уу.', 'error'); fTitle.focus(); return; }
+    const st = fStatus.value;
+    const { data, error } = await db.from('todos').insert([{
+      title,
+      description: fDesc.value.trim() || null,
+      category: fCategory.value,
+      folder_id: fFolder.value || null,
+      kind: fKind.value,
+      priority: parseInt(fPriority.value, 10),
+      due_date: fDate.value || null,
+      due_time: fTime.value || null,
+      status: st,
+      is_completed: st === 'done'
+    }]).select();
+
+    if (error) { showMsg('Алдаа: ' + error.message, 'error'); return; }
+
+    showMsg('✓ "' + title + '" нэмэгдлээ.', 'info');
+    if (data && data[0]) recentIds.unshift(data[0].id);
+    // Формыг цэвэрлэх (ангилал, фолдер хэвээр үлдээж дараалан нэмэхэд хялбар)
+    fTitle.value = ''; fDesc.value = ''; fTime.value = '';
+    fPriority.value = '0'; fKind.value = 'task'; fStatus.value = 'todo'; fAssignee.value = '';
+    if (fDate._flatpickr) fDate._flatpickr.clear(); else fDate.value = '';
+    fTitle.focus();
+    loadRecent();
+  };
+  fTitle.addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('f-add').click(); });
+
+  // ----- Саяхан нэмсэн -----
+  async function loadRecent() {
+    if (recentIds.length === 0) {
+      // Энэ сессэд нэмээгүй бол датабэйсээс хамгийн сүүлийн 5-ыг
+      const { data } = await db.from('todos').select('*').order('id', { ascending: false }).limit(5);
+      renderRecent(data || []);
+      return;
+    }
+    const { data } = await db.from('todos').select('*').in('id', recentIds.slice(0, 10));
+    // recentIds-ийн дарааллаар эрэмбэлэх
+    const ordered = recentIds.slice(0,10).map(id => (data||[]).find(t => t.id === id)).filter(Boolean);
+    renderRecent(ordered);
+  }
+  function renderRecent(tasks) {
+    recentList.innerHTML = '';
+    if (!tasks || tasks.length === 0) { recentEmpty.classList.remove('hidden'); return; }
+    recentEmpty.classList.add('hidden');
+    tasks.forEach(t => recentList.appendChild(buildTaskLi(t, loadRecent)));
+  }
+
+  loadFolders();
+  loadRecent();
+});
+</script>
+</body>
+</html>
