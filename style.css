@@ -95,6 +95,9 @@ body {
 }
 .nav-links { display: flex; flex-direction: column; gap: 2px; }
 .nav a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   color: var(--muted);
   text-decoration: none;
   padding: 11px 12px;
@@ -105,11 +108,26 @@ body {
 }
 .nav a:hover { color: var(--text); background: var(--surface-2); }
 .nav a.active { color: var(--accent); background: var(--accent-glow); }
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  transition: opacity 0.18s var(--ease);
+}
+.nav a:hover .nav-icon,
+.nav a.active .nav-icon { opacity: 1; }
 .nav-sub { display: flex; flex-direction: column; gap: 1px; margin: 1px 0 4px; }
 .nav-folder {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px;
   color: var(--muted-2) !important;
   font-size: 13px !important;
-  padding: 7px 12px 7px 28px !important;
+  padding: 7px 12px 7px 20px !important;
   font-weight: 400 !important;
   border-radius: var(--radius-sm);
   text-decoration: none;

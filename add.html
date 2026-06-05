@@ -140,7 +140,7 @@ requireAuth('add', (user) => {
     fFolder.innerHTML = '<option value="">— No folder —</option>';
     relevant.forEach(f => {
       const o = document.createElement('option');
-      o.value = f.id; o.innerText = '📁 ' + f.name;
+      o.value = f.id; o.innerText = f.name;
       fFolder.appendChild(o);
     });
   }

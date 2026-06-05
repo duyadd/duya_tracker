@@ -4,6 +4,18 @@ const SUPABASE_URL = 'https://vxkkjzligcvhutfzjpii.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_xObTJJiaRusXc8PH9LfhQg_foFrvoWK';
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Minimal stroke-based SVG icons for sidebar nav
+const IC = {
+  home:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9 21v-9h6v9"/></svg>`,
+  add:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
+  user:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>`,
+  work:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>`,
+  cal:   `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
+  done:  `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>`,
+  trash: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>`,
+  fold:  `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>`,
+};
+
 // ===== Сэдэв (dark/light) =====
 function applyTheme(theme) {
   if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
@@ -42,17 +54,17 @@ async function renderNav(active) {
   const nav = document.createElement('div');
   nav.className = 'nav';
   nav.innerHTML = `
-    <span class="brand">✦ Planner</span>
+    <span class="brand">Planner</span>
     <nav class="nav-links">
-      <a href="index.html" data-page="home">🏠 Home</a>
-      <a href="add.html" data-page="add">➕ Add Task</a>
-      <a href="personal.html" data-page="personal">👤 Personal</a>
+      <a href="index.html" data-page="home"><span class="nav-icon">${IC.home}</span>Home</a>
+      <a href="add.html" data-page="add"><span class="nav-icon">${IC.add}</span>Add Task</a>
+      <a href="personal.html" data-page="personal"><span class="nav-icon">${IC.user}</span>Personal</a>
       <div class="nav-sub" id="sub-personal"></div>
-      <a href="work.html" data-page="work">💼 Work</a>
+      <a href="work.html" data-page="work"><span class="nav-icon">${IC.work}</span>Work</a>
       <div class="nav-sub" id="sub-work"></div>
-      <a href="calendar.html" data-page="calendar">📅 Schedule</a>
-      <a href="done.html" data-page="done">✓ Done</a>
-      <a href="trash.html" data-page="trash">🗑 Trash</a>
+      <a href="calendar.html" data-page="calendar"><span class="nav-icon">${IC.cal}</span>Schedule</a>
+      <a href="done.html" data-page="done"><span class="nav-icon">${IC.done}</span>Done</a>
+      <a href="trash.html" data-page="trash"><span class="nav-icon">${IC.trash}</span>Trash</a>
     </nav>
     <div class="nav-footer">
       <span class="user" id="nav-user"></span>
@@ -99,7 +111,7 @@ async function renderNavFolders(active) {
       const a = document.createElement('a');
       a.className = 'nav-folder';
       a.href = cat + '.html?folder=' + f.id;
-      a.innerText = '📁 ' + f.name;
+      a.innerHTML = `<span class="nav-icon">${IC.fold}</span>${f.name}`;
       if (active === cat && String(activeFolder) === String(f.id)) a.classList.add('active');
       container.appendChild(a);
     });

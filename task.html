@@ -200,7 +200,7 @@ requireAuth('task', async (user) => {
       fSel.innerHTML = '<option value="">— No folder —</option>';
       folders.filter(f => (f.category||'work') === cat).forEach(f => {
         const o = document.createElement('option');
-        o.value = f.id; o.innerText = '📁 ' + f.name;
+        o.value = f.id; o.innerText = f.name;
         if (String(f.id) === String(task.folder_id)) o.selected = true;
         fSel.appendChild(o);
       });
