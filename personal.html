@@ -188,7 +188,7 @@ requireAuth('personal', (user) => {
       sectionsEl.appendChild(msg);
     } else {
       const board = document.createElement('div');
-      board.className = 'board';
+      board.className = 'board board-2col';
 
       COLS.forEach(col => {
         const colTasks = sortTasks(tasks.filter(t => {
